@@ -1,0 +1,39 @@
+# ── Expo / React Native ───────────────────────────────────────
+node_modules/
+.expo/
+.expo-shared/
+dist/
+web-build/
+.metro-health-check*
+
+# ── Env / secrets ─────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Logs ──────────────────────────────────────────────────────
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# ── Native build artifacts (after prebuild) ───────────────────
+android/
+ios/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# ── Expo EAS local credentials / temp ─────────────────────────
+.eas/
+credentials.json
+
+# ── IDE / OS ──────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp

@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "UrbanAV Supplier",
+    "slug": "urbanav-supplier",
+    "version": "1.0.0",
+    "description": "UrbanAV Supplier — manage your AV rental inventory, respond to buyer inquiries, track orders and earnings.",
+    "orientation": "portrait",
+    "icon": "./assets/logo.jpg",
+    "userInterfaceStyle": "light",
+    "primaryColor": "#7B25F4",
+    "splash": {
+      "image": "./assets/logo.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#140821"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.urbanav.supplier",
+      "icon": "./assets/logo.jpg"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.jpg",
+        "backgroundColor": "#140821"
+      },
+      "package": "com.urbanav.supplier"
+    },
+    "web": {
+      "name": "UrbanAV Supplier",
+      "shortName": "UrbanAV Supplier",
+      "description": "Manage your AV rental inventory and bookings.",
+      "themeColor": "#7B25F4",
+      "backgroundColor": "#140821",
+      "favicon": "./assets/logo.jpg"
+    }
+  }
+}
