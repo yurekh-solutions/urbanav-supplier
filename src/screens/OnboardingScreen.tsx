@@ -434,9 +434,9 @@ const styles = StyleSheet.create({
   },
   ctaBtn: {
     width: '100%',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: GLASS.tier1Border,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(247, 217, 255, 0.35)',
     overflow: 'hidden',
   },
   ctaBtnInner: {
@@ -445,8 +445,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     paddingVertical: 16,
-    borderRadius: 14,
-    backgroundColor: 'rgba(184, 61, 245, 0.18)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(247, 217, 255, 0.08)',
     overflow: 'hidden',
     position: 'relative',
   },
