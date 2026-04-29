@@ -57,6 +57,58 @@ export const authAPI = {
       transformRequest: (d) => d,
     });
   },
+  // Upload multi-slot KYC documents (PAN / Aadhaar / BankProof / GST)
+  // together with business description, products offered, years in business.
+  uploadKycDocuments: async (
+    docs: {
+      pan?: { uri: string; name: string; mimeType: string } | null;
+      aadhaar?: { uri: string; name: string; mimeType: string } | null;
+      bankProof?: { uri: string; name: string; mimeType: string } | null;
+      gst?: { uri: string; name: string; mimeType: string } | null;
+    },
+    meta: {
+      businessName?: string;
+      businessDescription?: string;
+      productsOffered?: string[];
+      yearsInBusiness?: number | string;
+      gstNumber?: string;
+      panNumber?: string;
+    },
+    token?: string
+  ) => {
+    const form = new FormData();
+
+    const appendFile = async (field: 'pan' | 'aadhaar' | 'bankProof' | 'gst', d?: { uri: string; name: string; mimeType: string } | null) => {
+      if (!d || !d.uri) return;
+      if (Platform.OS === 'web') {
+        const resp = await fetch(d.uri);
+        const blob = await resp.blob();
+        (form as any).append(field, blob, d.name);
+      } else {
+        form.append(field, { uri: d.uri, name: d.name, type: d.mimeType } as any);
+      }
+    };
+
+    await appendFile('pan', docs.pan);
+    await appendFile('aadhaar', docs.aadhaar);
+    await appendFile('bankProof', docs.bankProof);
+    await appendFile('gst', docs.gst);
+
+    if (meta.businessName !== undefined) form.append('businessName', meta.businessName);
+    if (meta.businessDescription !== undefined) form.append('businessDescription', meta.businessDescription);
+    if (meta.productsOffered !== undefined) form.append('productsOffered', JSON.stringify(meta.productsOffered));
+    if (meta.yearsInBusiness !== undefined) form.append('yearsInBusiness', String(meta.yearsInBusiness));
+    if (meta.gstNumber !== undefined) form.append('gstNumber', meta.gstNumber);
+    if (meta.panNumber !== undefined) form.append('panNumber', meta.panNumber);
+
+    return api.post('/auth/kyc-documents', form, {
+      headers: {
+        ...(Platform.OS === 'web' ? {} : { 'Content-Type': 'multipart/form-data' }),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      transformRequest: (d) => d,
+    });
+  },
 };
 
 export const equipmentAPI = {

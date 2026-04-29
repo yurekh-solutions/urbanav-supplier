@@ -33,6 +33,8 @@ import {
   CheckCircle2,
   UploadCloud,
   X,
+  Eye,
+  EyeOff,
 } from 'lucide-react-native';
 import { GRADIENT, GLASS, NEON, TEXT, SEMANTIC, SURFACE } from '../theme/colors';
 import { useAuthStore } from '../store';
@@ -47,6 +49,22 @@ type PickedDoc = {
   size?: number;
 };
 
+type DocSlotKey = 'pan' | 'aadhaar' | 'bankProof' | 'gst';
+type DocRequirement = 'required' | 'optional' | 'recommended';
+
+interface DocSlotDef {
+  key: DocSlotKey;
+  label: string;
+  requirement: DocRequirement;
+}
+
+const DOC_SLOTS: DocSlotDef[] = [
+  { key: 'pan', label: 'PAN Card', requirement: 'required' },
+  { key: 'aadhaar', label: 'Aadhaar Card', requirement: 'optional' },
+  { key: 'bankProof', label: 'Bank Proof', requirement: 'required' },
+  { key: 'gst', label: 'GST/Business License', requirement: 'recommended' },
+];
+
 /** Glass / neumorphic input. No box-shadows; border + subtle gradient for depth. */
 function GlassField({
   Icon,
@@ -59,6 +77,7 @@ function GlassField({
   autoCapitalize,
 }: any) {
   const [focused, setFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const borderAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -75,6 +94,9 @@ function GlassField({
     outputRange: [GLASS.tier1Border, NEON.glow],
   });
 
+  const isPassword = secureTextEntry;
+  const actualSecure = isPassword && !showPassword;
+
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -84,6 +106,7 @@ function GlassField({
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
+          pointerEvents="none"
         />
         {Icon ? <Icon size={18} color={focused ? NEON.glow : TEXT.tertiary} strokeWidth={1.8} /> : null}
         <TextInput
@@ -91,12 +114,75 @@ function GlassField({
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor="rgba(247, 217, 255, 0.35)"
-          secureTextEntry={secureTextEntry}
+          secureTextEntry={actualSecure}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize ?? 'none'}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          style={styles.fieldInput}
+          style={[styles.fieldInput, isPassword ? { paddingRight: 40 } : {}]}
+        />
+        {isPassword && (
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            style={{ position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            {showPassword ? (
+              <EyeOff size={18} color={TEXT.tertiary} strokeWidth={1.8} />
+            ) : (
+              <Eye size={18} color={TEXT.tertiary} strokeWidth={1.8} />
+            )}
+          </TouchableOpacity>
+        )}
+      </Animated.View>
+    </View>
+  );
+}
+
+/** Glass / neumorphic textarea (multi-line) with the same feel as GlassField. */
+function GlassTextArea({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  numberOfLines = 4,
+}: any) {
+  const [focused, setFocused] = useState(false);
+  const borderAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(borderAnim, {
+      toValue: focused ? 1 : 0,
+      duration: 240,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [focused]);
+  const borderColor = borderAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [GLASS.tier1Border, NEON.glow],
+  });
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <Animated.View style={[styles.fieldBox, styles.textAreaBox, { borderColor }]}>
+        <LinearGradient
+          colors={['rgba(247, 217, 255, 0.06)', 'rgba(247, 217, 255, 0.02)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="rgba(247, 217, 255, 0.35)"
+          multiline
+          numberOfLines={numberOfLines}
+          textAlignVertical="top"
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={[styles.fieldInput, { minHeight: numberOfLines * 22, paddingTop: 10 }]}
         />
       </Animated.View>
     </View>
@@ -117,11 +203,19 @@ export default function RegisterScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Step 2 — business info + KYC doc
+  // Step 2 — business info + multi-slot KYC docs
   const [businessName, setBusinessName] = useState('');
+  const [businessDescription, setBusinessDescription] = useState('');
+  const [productsOffered, setProductsOffered] = useState('');
+  const [yearsInBusiness, setYearsInBusiness] = useState('');
   const [gstNumber, setGstNumber] = useState('');
   const [panNumber, setPanNumber] = useState('');
-  const [doc, setDoc] = useState<PickedDoc | null>(null);
+  const [docs, setDocs] = useState<Record<DocSlotKey, PickedDoc | null>>({
+    pan: null,
+    aadhaar: null,
+    bankProof: null,
+    gst: null,
+  });
 
   // Animated progress bar
   const progressAnim = useRef(new Animated.Value(0.5)).current;
@@ -147,9 +241,12 @@ export default function RegisterScreen({ navigation }: any) {
 
   const validateStep2 = () => {
     if (!businessName.trim()) return 'Please enter your business name';
-    if (!gstNumber.trim() || gstNumber.trim().length < 10) return 'Please enter a valid GST number';
-    if (!panNumber.trim() || panNumber.trim().length < 10) return 'Please enter a valid PAN number';
-    if (!doc) return 'Please upload your KYC document (PDF, JPG, or PNG)';
+    if (!businessDescription.trim()) return 'Please describe your business';
+    if (!productsOffered.trim()) return 'Please list the products / services you offer';
+    if (!yearsInBusiness.trim() || Number.isNaN(Number(yearsInBusiness)) || Number(yearsInBusiness) < 0)
+      return 'Please enter years in business';
+    if (!docs.pan) return 'PAN Card is required';
+    if (!docs.bankProof) return 'Bank Proof is required';
     return null;
   };
 
@@ -162,7 +259,7 @@ export default function RegisterScreen({ navigation }: any) {
     setStep(1);
   };
 
-  const handlePickDocument = async () => {
+  const handlePickDocument = async (slot: DocSlotKey) => {
     try {
       const res = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/jpeg', 'image/png'],
@@ -174,17 +271,20 @@ export default function RegisterScreen({ navigation }: any) {
       if (!asset?.uri) return;
 
       const size = asset.size ?? 0;
-      if (size > 10 * 1024 * 1024) {
-        Alert.alert('File too large', 'Please select a file under 10 MB.');
+      if (size > 5 * 1024 * 1024) {
+        Alert.alert('File too large', 'Please select a file under 5 MB.');
         return;
       }
 
-      setDoc({
-        uri: asset.uri,
-        name: asset.name || `kyc-${Date.now()}.pdf`,
-        mimeType: asset.mimeType || 'application/pdf',
-        size,
-      });
+      setDocs((prev) => ({
+        ...prev,
+        [slot]: {
+          uri: asset.uri,
+          name: asset.name || `${slot}-${Date.now()}.pdf`,
+          mimeType: asset.mimeType || 'application/pdf',
+          size,
+        },
+      }));
     } catch (e: any) {
       Alert.alert('Picker error', e?.message || 'Could not open file picker');
     }
@@ -227,14 +327,34 @@ export default function RegisterScreen({ navigation }: any) {
 
       if (!registered) throw new Error('Registration failed');
 
-      // Upload KYC document using the saved token.
+      // Upload multi-slot KYC documents + business detail fields.
       const token = (await AsyncStorage.getItem('@urbanav_token')) || undefined;
-      await authAPI.uploadKycDocument(doc!.uri, doc!.name, doc!.mimeType, token);
+      const products = productsOffered
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      await authAPI.uploadKycDocuments(
+        {
+          pan: docs.pan,
+          aadhaar: docs.aadhaar,
+          bankProof: docs.bankProof,
+          gst: docs.gst,
+        },
+        {
+          businessName: businessName.trim(),
+          businessDescription: businessDescription.trim(),
+          productsOffered: products,
+          yearsInBusiness: yearsInBusiness.trim(),
+          gstNumber: gstNumber.trim().toUpperCase(),
+          panNumber: panNumber.trim().toUpperCase(),
+        },
+        token
+      );
 
       setSubmitting(false);
       Alert.alert(
         'Account submitted',
-        'Your supplier account and KYC document have been submitted. Our admin team will review and approve your account shortly.',
+        "Your supplier application has been submitted. Our team will review your documents within 24\u201348 hours. You'll receive an email once approved.",
         [{ text: 'OK', onPress: () => navigation.replace('Login') }]
       );
     } catch (e: any) {
@@ -423,7 +543,7 @@ export default function RegisterScreen({ navigation }: any) {
               <View>
                 <Text style={styles.heroTitle}>Business & KYC</Text>
                 <Text style={styles.heroSub}>
-                  Upload your KYC document. Admin verifies before your account goes live.
+                  Tell us about your business and upload the required documents. Admin verifies before your account goes live.
                 </Text>
 
                 <GlassField
@@ -434,9 +554,35 @@ export default function RegisterScreen({ navigation }: any) {
                   onChangeText={setBusinessName}
                   autoCapitalize="words"
                 />
+
+                <GlassTextArea
+                  label="Business description"
+                  placeholder="Describe your business and what you offer..."
+                  value={businessDescription}
+                  onChangeText={setBusinessDescription}
+                  numberOfLines={4}
+                />
+
+                <GlassTextArea
+                  label="Products / Services offered"
+                  placeholder="LED walls, DJ setup, projectors (comma separated)"
+                  value={productsOffered}
+                  onChangeText={setProductsOffered}
+                  numberOfLines={3}
+                />
+
                 <GlassField
                   Icon={Hash}
-                  label="GST number"
+                  label="Years in business"
+                  placeholder="e.g. 5"
+                  value={yearsInBusiness}
+                  onChangeText={setYearsInBusiness}
+                  keyboardType="number-pad"
+                />
+
+                <GlassField
+                  Icon={Hash}
+                  label="GST number (optional)"
                   placeholder="22AAAAA0000A1Z5"
                   value={gstNumber}
                   onChangeText={(t: string) => setGstNumber(t.toUpperCase())}
@@ -444,66 +590,91 @@ export default function RegisterScreen({ navigation }: any) {
                 />
                 <GlassField
                   Icon={Hash}
-                  label="PAN number"
+                  label="PAN number (optional)"
                   placeholder="ABCDE1234F"
                   value={panNumber}
                   onChangeText={(t: string) => setPanNumber(t.toUpperCase())}
                   autoCapitalize="characters"
                 />
 
-                <Text style={styles.fieldLabel}>KYC document</Text>
-                {!doc ? (
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={handlePickDocument}
-                    style={styles.dropZone}
-                  >
-                    <LinearGradient
-                      colors={['rgba(230, 102, 255, 0.08)', 'rgba(123, 37, 244, 0.04)']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={StyleSheet.absoluteFill}
-                    />
-                    <View style={styles.dropIcon}>
-                      <UploadCloud size={26} color={NEON.glow} strokeWidth={1.6} />
+                <Text style={[styles.fieldLabel, { marginTop: 6 }]}>Documents</Text>
+                <View style={styles.docsIntro}>
+                  <FileText size={14} color={NEON.glow} strokeWidth={1.8} />
+                  <Text style={styles.docsIntroText}>
+                    Upload required documents (PDF, JPG, PNG · Max 5 MB each)
+                  </Text>
+                </View>
+
+                {DOC_SLOTS.map((slot) => {
+                  const picked = docs[slot.key];
+                  const badgeStyle =
+                    slot.requirement === 'required'
+                      ? styles.badgeRequired
+                      : slot.requirement === 'optional'
+                      ? styles.badgeOptional
+                      : styles.badgeRecommended;
+                  const badgeText =
+                    slot.requirement === 'required'
+                      ? 'Required'
+                      : slot.requirement === 'optional'
+                      ? 'Optional'
+                      : 'Recommended';
+                  return (
+                    <View key={slot.key} style={styles.docSlot}>
+                      <View style={styles.docSlotHead}>
+                        <Text style={styles.docSlotLabel}>{slot.label}</Text>
+                        <View style={badgeStyle}>
+                          <Text style={styles.badgeText}>{badgeText}</Text>
+                        </View>
+                      </View>
+                      {!picked ? (
+                        <TouchableOpacity
+                          activeOpacity={0.85}
+                          onPress={() => handlePickDocument(slot.key)}
+                          style={styles.docPicker}
+                        >
+                          <UploadCloud size={16} color={NEON.glow} strokeWidth={1.8} />
+                          <Text style={styles.docPickerText}>Choose file</Text>
+                          <Text style={styles.docPickerHint}>No file chosen</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={styles.docPickedRow}>
+                          <View style={styles.docIconSmall}>
+                            <FileText size={16} color={SEMANTIC.success} strokeWidth={1.8} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.docName} numberOfLines={1}>
+                              {picked.name}
+                            </Text>
+                            <Text style={styles.docMeta}>
+                              {picked.mimeType || 'application/pdf'}
+                              {picked.size ? `  ·  ${formatBytes(picked.size)}` : ''}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => handlePickDocument(slot.key)}
+                            style={styles.docReplace}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <Text style={styles.docReplaceText}>Replace</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => setDocs((p) => ({ ...p, [slot.key]: null }))}
+                            style={styles.docRemove}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <X size={14} color={TEXT.secondary} strokeWidth={2} />
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
-                    <Text style={styles.dropTitle}>Tap to upload PDF</Text>
-                    <Text style={styles.dropSub}>PDF · JPG · PNG · Max 10 MB</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.docCard}>
-                    <LinearGradient
-                      colors={['rgba(34, 224, 130, 0.10)', 'rgba(34, 224, 130, 0.02)']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={StyleSheet.absoluteFill}
-                    />
-                    <View style={styles.docIcon}>
-                      <FileText size={22} color={SEMANTIC.success} strokeWidth={1.8} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.docName} numberOfLines={1}>
-                        {doc.name}
-                      </Text>
-                      <Text style={styles.docMeta}>
-                        {doc.mimeType || 'application/pdf'}
-                        {doc.size ? `  ·  ${formatBytes(doc.size)}` : ''}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => setDoc(null)}
-                      style={styles.docRemove}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <X size={16} color={TEXT.secondary} strokeWidth={2} />
-                    </TouchableOpacity>
-                  </View>
-                )}
+                  );
+                })}
 
                 <View style={styles.infoBanner}>
                   <CheckCircle2 size={16} color={NEON.glow} strokeWidth={2} />
                   <Text style={styles.infoBannerText}>
-                    Admin will verify your document and approve your account.
+                    What happens next? Our team will review your application within 24–48 hours. You'll receive an email once approved.
                   </Text>
                 </View>
 
@@ -776,5 +947,139 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: TEXT.tertiary,
     lineHeight: 18,
+  },
+  textAreaBox: {
+    height: undefined,
+    paddingVertical: 10,
+    alignItems: 'flex-start',
+  },
+  docsIntro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: GLASS.tier2Border,
+    backgroundColor: GLASS.tier3,
+    marginBottom: 12,
+  },
+  docsIntroText: {
+    flex: 1,
+    fontSize: 12,
+    color: TEXT.tertiary,
+    lineHeight: 18,
+  },
+  docSlot: {
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: GLASS.tier2Border,
+    backgroundColor: GLASS.tier3,
+  },
+  docSlotHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  docSlotLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: TEXT.primary,
+    letterSpacing: 0.2,
+  },
+  badgeRequired: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 85, 85, 0.45)',
+    backgroundColor: 'rgba(255, 85, 85, 0.14)',
+  },
+  badgeOptional: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(247, 217, 255, 0.28)',
+    backgroundColor: 'rgba(247, 217, 255, 0.08)',
+  },
+  badgeRecommended: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 224, 130, 0.40)',
+    backgroundColor: 'rgba(34, 224, 130, 0.14)',
+  },
+  badgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: TEXT.primary,
+    textTransform: 'uppercase',
+  },
+  docPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: GLASS.tier1Border,
+    borderStyle: 'dashed',
+    backgroundColor: 'rgba(247, 217, 255, 0.04)',
+  },
+  docPickerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: TEXT.primary,
+    letterSpacing: 0.3,
+  },
+  docPickerHint: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 11,
+    color: TEXT.tertiary,
+  },
+  docPickedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 224, 130, 0.35)',
+    backgroundColor: 'rgba(34, 224, 130, 0.08)',
+  },
+  docIconSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(34, 224, 130, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 224, 130, 0.28)',
+  },
+  docReplace: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: GLASS.tier1Border,
+    backgroundColor: GLASS.tier2,
+  },
+  docReplaceText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: TEXT.secondary,
+    textTransform: 'uppercase',
   },
 });
