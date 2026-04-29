@@ -396,11 +396,18 @@ export default function RegisterScreen({ navigation }: any) {
                     colors={GRADIENT.brand as string[]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.primaryBtnInner}
-                  >
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <LinearGradient
+                    colors={GRADIENT.glassShine as string[]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.primaryBtnInner}>
                     <Text style={styles.primaryBtnText}>CONTINUE</Text>
                     <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.5} />
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -510,8 +517,15 @@ export default function RegisterScreen({ navigation }: any) {
                     colors={GRADIENT.brand as string[]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.primaryBtnInner}
-                  >
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <LinearGradient
+                    colors={GRADIENT.glassShine as string[]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.primaryBtnInner}>
                     {submitting ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
@@ -520,7 +534,7 @@ export default function RegisterScreen({ navigation }: any) {
                         <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.5} />
                       </>
                     )}
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -555,7 +569,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: GLASS.tier2,
     borderWidth: 1,
     borderColor: GLASS.tier1Border,
   },
@@ -567,7 +580,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: GLASS.tier1Border,
     overflow: 'hidden',
-    backgroundColor: GLASS.tier2,
   },
   appName: { fontSize: 15, fontWeight: '800', color: TEXT.primary, letterSpacing: -0.3 },
   appSub: {
@@ -665,6 +677,9 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 16,
     borderRadius: 14,
+    backgroundColor: 'rgba(184, 61, 245, 0.18)',
+    overflow: 'hidden',
+    position: 'relative',
   },
   primaryBtnText: {
     fontSize: 13,

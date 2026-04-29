@@ -240,13 +240,20 @@ export default function OnboardingScreen({ navigation }: any) {
               colors={GRADIENT.brand as string[]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.ctaBtnInner}
-            >
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={GRADIENT.glassShine as string[]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.ctaBtnInner}>
               <Text style={styles.ctaBtnText}>
                 {page === STEPS.length - 1 ? 'CREATE SUPPLIER ACCOUNT' : 'NEXT'}
               </Text>
               <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.5} />
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
 
           {/* Already have account */}
@@ -439,6 +446,9 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 16,
     borderRadius: 14,
+    backgroundColor: 'rgba(184, 61, 245, 0.18)',
+    overflow: 'hidden',
+    position: 'relative',
   },
   ctaBtnText: {
     fontSize: 14,
