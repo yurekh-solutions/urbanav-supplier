@@ -12,6 +12,7 @@ import {
   MessageSquare,
   ShoppingCart,
   Plus,
+  ClipboardList,
 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
@@ -35,6 +36,7 @@ import SupplierHomeScreen from './src/screens/SupplierHomeScreen';
 import MyEquipmentScreen from './src/screens/MyEquipmentScreen';
 import AddEditEquipmentScreen from './src/screens/AddEditEquipmentScreen';
 import IncomingInquiriesScreen from './src/screens/IncomingInquiriesScreen';
+import BrowseRequirementsScreen from './src/screens/BrowseRequirementsScreen';
 import SupplierOrdersScreen from './src/screens/SupplierOrdersScreen';
 import EarningsScreen from './src/screens/EarningsScreen';
 
@@ -90,6 +92,18 @@ function SupplierTabs() {
           tabBarIcon: ({ focused, color }: any) => (
             <TabBounce focused={focused}>
               <Package size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+            </TabBounce>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Browse"
+        component={BrowseRequirementsScreen}
+        options={{
+          tabBarLabel: 'Browse',
+          tabBarIcon: ({ focused, color }: any) => (
+            <TabBounce focused={focused}>
+              <ClipboardList size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
             </TabBounce>
           ),
         }}

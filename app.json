@@ -35,6 +35,12 @@
       "themeColor": "#7B25F4",
       "backgroundColor": "#140821",
       "favicon": "./assets/logo.jpg"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9a1fc121-6294-4533-8dee-04f912912914"
+      }
+    },
+    "owner": "urbanv"
   }
 }

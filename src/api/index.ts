@@ -146,6 +146,16 @@ export const inquiryAPI = {
   getMine: () => api.get('/inquiries'),
   respond: (id: string, data: any) => api.patch(`/inquiries/${id}/respond`, data),
   accept: (id: string) => api.patch(`/inquiries/${id}/accept`),
+  // Supplier sends a new inquiry (quote) to a buyer for a specific requirement.
+  send: (data: { vendorId: string; requirementId: string; initialPrice?: number }) =>
+    api.post('/inquiries', data),
+};
+
+export const requirementAPI = {
+  // Supplier browses open buyer requirements (marketplace feed).
+  browse: (params?: { city?: string; eventType?: string; item?: string; status?: string; limit?: number }) =>
+    api.get('/requirements', { params }),
+  getById: (id: string) => api.get(`/requirements/${id}`),
 };
 
 export const otpAPI = {

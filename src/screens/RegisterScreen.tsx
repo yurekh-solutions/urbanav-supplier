@@ -139,8 +139,8 @@ function GlassField({
   );
 }
 
-/** Glass / neumorphic textarea (multi-line) with the same feel as GlassField. */
-function GlassTextArea({
+/** Simple multi-line input field. */
+function TextArea({
   label,
   value,
   onChangeText,
@@ -164,14 +164,7 @@ function GlassTextArea({
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <Animated.View style={[styles.fieldBox, styles.textAreaBox, { borderColor }]}>
-        <LinearGradient
-          colors={['rgba(247, 217, 255, 0.06)', 'rgba(247, 217, 255, 0.02)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
+      <Animated.View style={[styles.textAreaBox, { borderColor }]}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -182,7 +175,7 @@ function GlassTextArea({
           textAlignVertical="top"
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          style={[styles.fieldInput, { minHeight: numberOfLines * 22, paddingTop: 10 }]}
+          style={styles.textAreaInput}
         />
       </Animated.View>
     </View>
@@ -555,7 +548,7 @@ export default function RegisterScreen({ navigation }: any) {
                   autoCapitalize="words"
                 />
 
-                <GlassTextArea
+                <TextArea
                   label="Business description"
                   placeholder="Describe your business and what you offer..."
                   value={businessDescription}
@@ -563,7 +556,7 @@ export default function RegisterScreen({ navigation }: any) {
                   numberOfLines={4}
                 />
 
-                <GlassTextArea
+                <TextArea
                   label="Products / Services offered"
                   placeholder="LED walls, DJ setup, projectors (comma separated)"
                   value={productsOffered}
@@ -949,9 +942,18 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   textAreaBox: {
-    height: undefined,
-    paddingVertical: 10,
-    alignItems: 'flex-start',
+    minHeight: 100,
+    borderRadius: 14,
+    borderWidth: 1,
+    backgroundColor: GLASS.tier2,
+    padding: 12,
+    overflow: 'hidden',
+  },
+  textAreaInput: {
+    fontSize: 14,
+    color: TEXT.primary,
+    fontWeight: '500',
+    minHeight: 80,
   },
   docsIntro: {
     flexDirection: 'row',
