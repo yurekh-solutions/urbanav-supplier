@@ -276,6 +276,19 @@ export default function ProfileScreen({ navigation }: any) {
         onPress: openEdit,
       },
       {
+        icon: ShieldCheck,
+        label: 'My KYC Documents',
+        sub:
+          user?.kycStatus === 'approved'
+            ? 'Approved · view your uploaded documents'
+            : user?.kycStatus === 'rejected'
+              ? 'Rejected · re-upload required documents'
+              : user?.kycStatus === 'submitted'
+                ? 'Under review · view uploaded documents'
+                : 'Upload PAN, Aadhaar, Bank Proof & GST',
+        onPress: () => navigation.navigate('MyDocuments' as never),
+      },
+      {
         icon: MapPin,
         label: 'Delivery Addresses',
         sub:
@@ -315,7 +328,7 @@ export default function ProfileScreen({ navigation }: any) {
         onPress: () => navigation.navigate('Privacy' as never),
       },
     ],
-    [user?.address?.city, user?.address?.state, user?.addresses?.length, stats.unread, isGuest, isSupplier]
+    [user?.address?.city, user?.address?.state, user?.addresses?.length, user?.kycStatus, stats.unread, isGuest, isSupplier]
   );
 
   const quickActions = [

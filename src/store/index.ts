@@ -12,8 +12,8 @@ interface AuthState {
   // In the supplier app there is no guest mode and the role is always 'supplier'.
   isGuest: boolean;
   preferredRole: 'supplier';
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ justApproved?: boolean } | void>;
+  register: (data: any) => Promise<{ pending?: boolean; user?: any } | void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
@@ -46,11 +46,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Call backend; demo credentials are handled server-side via .env.
       let user: any;
       let token: string;
+      let justApproved = false;
       try {
         const res = await authAPI.login({ email, password });
         const d: any = res.data || {};
         user = d.user ?? d;
         token = d.token ?? d.accessToken ?? 'mock-token';
+        justApproved = !!d.justApproved;
       } catch (apiErr: any) {
         // Offline fallback is removed — let the server return the error.
         throw apiErr;
@@ -73,6 +75,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       ]);
 
       set({ user, token, isAuthenticated: true, hasOnboarded: true, isLoading: false });
+
+      // Return justApproved so LoginScreen can trigger the approval popup
+      return { justApproved };
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -102,7 +107,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const kycStatus = user?.kycStatus;
 
       if (accountStatus === 'pending' || kycStatus === 'pending') {
-        // Don't set auth state — go back to login with pending status shown.
+        // Don't set auth state — store minimal info so we know the account exists
+        // but don't set onboarded or authenticated flags.
         await AsyncStorage.multiSet([
           ['@urbanav_user', JSON.stringify(user)],
           ['@urbanav_token', token],
@@ -113,11 +119,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           token,
           isLoading: false,
           isAuthenticated: false,
-          hasOnboarded: false,
+          hasOnboarded: false, // Keep false so PendingApproval screen shows
         });
-        const err: any = new Error('pending_approval');
-        err.response = { data: { message: 'pending_approval' } };
-        throw err;
+        // Return success info instead of throwing — let RegisterScreen handle navigation
+        return { pending: true, user };
       }
 
       // Active account — proceed with login as normal

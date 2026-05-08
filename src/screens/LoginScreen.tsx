@@ -10,9 +10,12 @@ import {
   StatusBar,
   TextInput,
   StyleSheet,
+  Modal,
+  Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
+import { Eye, EyeOff, ArrowLeft, CheckCircle2, ArrowRight } from 'lucide-react-native';
 import { ScreenBackground, SEMANTIC, SPACING, RADIUS, NEON } from '../components/ui';
 import { useAuthStore } from '../store';
 
@@ -63,13 +66,25 @@ function LoginContent({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
   const { login, isLoading } = useAuthStore();
+
+  // Pulse animation for the approval modal checkmark
+  const pulseAnim = useState(new Animated.Value(0))[0];
 
   const handleLogin = async () => {
     setError('');
     if (!email || !password) { setError('Please enter your email and password.'); return; }
     try {
-      await login(email.trim().toLowerCase(), password);
+      const result: any = await login(email.trim().toLowerCase(), password);
+      // Check if the server flagged this as a first-login-after-approval
+      if (result?.justApproved) {
+        // Trigger pulse animation then show modal
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 0, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        ]).start(() => setShowApprovalModal(true));
+      }
     } catch {
       setError('Invalid email or password. Please try again.');
     }
@@ -134,6 +149,41 @@ function LoginContent({ navigation }: any) {
           <Text style={styles.glassOutlineBtnText}>REGISTER AS SUPPLIER</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Approval Success Modal */}
+      <Modal
+        visible={showApprovalModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowApprovalModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Animated.View
+              style={[
+                styles.modalIconWrap,
+                { transform: [{ scale: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.1] }) }] },
+              ]}
+            >
+              <CheckCircle2 size={48} color={SEMANTIC.success} strokeWidth={2} />
+            </Animated.View>
+            <Text style={styles.modalTitle}>Account Approved!</Text>
+            <Text style={styles.modalSub}>
+              Your supplier account has been verified by the admin team. You can now list equipment, accept bookings, and manage your business.
+            </Text>
+            <TouchableOpacity
+              onPress={() => setShowApprovalModal(false)}
+              activeOpacity={0.85}
+              style={styles.modalBtn}
+            >
+              <View style={styles.modalBtnInner}>
+                <Text style={styles.modalBtnText}>START SELLING</Text>
+                <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.5} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -440,4 +490,75 @@ const styles = StyleSheet.create({
 
   row2: { flexDirection: 'row', gap: SPACING.base },
   row2Inner: { flex: 1 },
+
+  // Approval modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    backgroundColor: GLASS_BG2,
+    borderWidth: 1,
+    borderColor: GLASS_BORDER,
+    borderRadius: 24,
+    padding: SPACING.xl * 1.5,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 380,
+    shadowColor: NEON.purple,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  modalIconWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: `${SEMANTIC.success}18`,
+    borderWidth: 2,
+    borderColor: `${SEMANTIC.success}45`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: SPACING.sm,
+  },
+  modalSub: {
+    fontSize: 14,
+    color: 'rgba(247, 217, 255, 0.65)',
+    textAlign: 'center',
+    lineHeight: 21,
+    marginBottom: SPACING.xl,
+  },
+  modalBtn: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(247, 217, 255, 0.35)',
+    overflow: 'hidden',
+    width: '100%',
+  },
+  modalBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
+    backgroundColor: `${NEON.purple}90`,
+  },
+  modalBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1.5,
+  },
 });

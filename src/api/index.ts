@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const API_URL = 'https://server-xb4a.onrender.com/api';
+const API_URL = 'http://localhost:4001/api';
 export const API_BASE = API_URL.replace(/\/api$/, '');
 
 /** Resolve a possibly-relative media URL (e.g. `/uploads/xxx.jpg`) to an absolute URL. */
@@ -30,6 +30,27 @@ api.interceptors.request.use(async (config) => {
   } catch {}
   return config;
 });
+
+// Auto-clear the session when the server reports that our token is no
+// longer valid (invalid signature, deleted user, expired, etc.). This
+// prevents the UI from looping on 401 / 500 errors after a stale token.
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const status = error?.response?.status;
+    const code = error?.response?.data?.code;
+    if (status === 401 || code === 'USER_NOT_FOUND') {
+      try {
+        await AsyncStorage.multiRemove([
+          '@urbanav_user',
+          '@urbanav_token',
+          '@urbanav_authenticated',
+        ]);
+      } catch {}
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const authAPI = {
   register: (data: any) => api.post('/auth/register', data),
@@ -121,7 +142,11 @@ export const equipmentAPI = {
 };
 
 export const ordersAPI = {
-  getSupplierOrders: () => api.get('/orders/supplier'),
+  // Optional `status` is the backend enum (e.g. 'pending','confirmed','completed').
+  // UI status labels (Upcoming/Ongoing/Completed/Cancelled) are mapped
+  // client-side; we still pass the raw enum if a specific filter is needed.
+  getSupplierOrders: (params?: { status?: string }) =>
+    api.get('/orders/supplier', { params }),
   getById: (id: string) => api.get(`/orders/${id}`),
   updateStatus: (id: string, data: any) => api.put(`/orders/${id}/status`, data),
   cancel: (id: string) => api.put(`/orders/${id}/cancel`),
@@ -144,11 +169,28 @@ export const notificationsAPI = {
 export const inquiryAPI = {
   // Supplier sees all inquiries addressed to them (backend branches on userType).
   getMine: () => api.get('/inquiries'),
+  getById: (id: string) => api.get(`/inquiries/${id}`),
   respond: (id: string, data: any) => api.patch(`/inquiries/${id}/respond`, data),
   accept: (id: string) => api.patch(`/inquiries/${id}/accept`),
+  reject: (id: string, reason?: string) =>
+    api.patch(`/inquiries/${id}/reject`, { reason }),
   // Supplier sends a new inquiry (quote) to a buyer for a specific requirement.
   send: (data: { vendorId: string; requirementId: string; initialPrice?: number }) =>
     api.post('/inquiries', data),
+};
+
+export const availabilityAPI = {
+  getMine: (params?: { from?: string; to?: string }) =>
+    api.get('/availability/me', { params }),
+  getForVendor: (vendorId: string, params?: { from?: string; to?: string }) =>
+    api.get('/availability', { params: { vendorId, ...(params || {}) } }),
+  block: (data: {
+    date: string;
+    blockedSlots?: { start: string; end: string; reason?: string }[];
+    fullyBlocked?: boolean;
+    equipmentIds?: string[];
+  }) => api.post('/availability', data),
+  unblock: (id: string) => api.delete(`/availability/${id}`),
 };
 
 export const requirementAPI = {

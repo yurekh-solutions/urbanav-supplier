@@ -21,6 +21,8 @@ import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import KYCFormScreen from './src/screens/KYCFormScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
+import PendingApprovalScreen from './src/screens/PendingApprovalScreen';
+import MyDocumentsScreen from './src/screens/MyDocumentsScreen';
 
 // Shared screens
 import ProfileScreen from './src/screens/ProfileScreen';
@@ -226,12 +228,14 @@ export default function App() {
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
               <Stack.Screen name="KYCForm" component={KYCFormScreen} />
+              <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
             </>
           ) : !isAuthenticated ? (
             <>
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
               <Stack.Screen name="KYCForm" component={KYCFormScreen} />
+              <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
             </>
           ) : (
             <>
@@ -247,6 +251,8 @@ export default function App() {
               <Stack.Screen name="Notifications" component={NotificationsScreen} />
               <Stack.Screen name="Terms" component={TermsScreen} />
               <Stack.Screen name="Privacy" component={PrivacyScreen} />
+              <Stack.Screen name="MyDocuments" component={MyDocumentsScreen} />
+              <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
             </>
           )}
         </Stack.Navigator>

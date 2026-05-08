@@ -14,6 +14,7 @@ import {
   Easing,
   ActivityIndicator,
   Image,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,12 +30,17 @@ import {
   Lock,
   Building2,
   Hash,
+  Home,
   FileText,
   CheckCircle2,
   UploadCloud,
   X,
   Eye,
   EyeOff,
+  AlertCircle,
+  ShieldCheck,
+  Clock,
+  XCircle,
 } from 'lucide-react-native';
 import { GRADIENT, GLASS, NEON, TEXT, SEMANTIC, SURFACE } from '../theme/colors';
 import { useAuthStore } from '../store';
@@ -182,33 +188,70 @@ function TextArea({
   );
 }
 
+type ErrorPopup = {
+  visible: boolean;
+  title: string;
+  message: string;
+  checklist?: string[];
+  primaryLabel?: string;
+  onPrimary?: () => void;
+  secondaryLabel?: string;
+  onSecondary?: () => void;
+};
+
 export default function RegisterScreen({ navigation }: any) {
   const { register } = useAuthStore();
   const [step, setStep] = useState<0 | 1>(0);
   const [submitting, setSubmitting] = useState(false);
+  // Inline error banner. Cleared on any field edit / step change.
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Prominent modal popup for API / upload errors the supplier must see.
+  const [errorPopup, setErrorPopup] = useState<ErrorPopup>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+  // Success modal shown after submit — ends with "Go to status page" CTA
+  // that sends the supplier to the full PendingApproval screen.
+  const [successPopup, setSuccessPopup] = useState<{
+    visible: boolean;
+    kycUploaded: boolean;
+  }>({ visible: false, kycUploaded: false });
 
   // Step 1 — supplier info
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [stateName, setStateName] = useState('');
+  const [pincode, setPincode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Step 2 — business info + multi-slot KYC docs
+  // Step 2 — business info + multi-slot KYC docs.
+  // NOTE: GST/PAN numbers are no longer collected as free-text — the admin
+  // verifies the numbers from the uploaded PDF documents instead.
   const [businessName, setBusinessName] = useState('');
   const [businessDescription, setBusinessDescription] = useState('');
   const [productsOffered, setProductsOffered] = useState('');
   const [yearsInBusiness, setYearsInBusiness] = useState('');
-  const [gstNumber, setGstNumber] = useState('');
-  const [panNumber, setPanNumber] = useState('');
   const [docs, setDocs] = useState<Record<DocSlotKey, PickedDoc | null>>({
     pan: null,
     aadhaar: null,
     bankProof: null,
     gst: null,
   });
+
+  // Clear the inline error whenever the user interacts with a field.
+  useEffect(() => {
+    if (errorMsg) setErrorMsg(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    fullName, email, phone, address, city, stateName, pincode, password, confirmPassword,
+    businessName, businessDescription, productsOffered, yearsInBusiness,
+    docs.pan, docs.aadhaar, docs.bankProof, docs.gst, step,
+  ]);
 
   // Animated progress bar
   const progressAnim = useRef(new Animated.Value(0.5)).current;
@@ -221,34 +264,50 @@ export default function RegisterScreen({ navigation }: any) {
     }).start();
   }, [step]);
 
-  const validateStep1 = () => {
-    if (!fullName.trim()) return 'Please enter your full name';
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email';
-    if (!phone.trim() || phone.replace(/\D/g, '').length < 10) return 'Please enter a valid phone number';
-    if (!city.trim()) return 'Please enter your city';
-    if (!stateName.trim()) return 'Please enter your state';
-    if (!password || password.length < 6) return 'Password must be at least 6 characters';
-    if (password !== confirmPassword) return 'Passwords do not match';
-    return null;
+  const validateStep1 = (): string[] => {
+    const issues: string[] = [];
+    if (!fullName.trim()) issues.push('Full name is empty');
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      issues.push('Email is missing or not a valid email address');
+    if (!phone.trim() || phone.replace(/\D/g, '').length < 10)
+      issues.push('Phone must be a 10-digit mobile number');
+    if (!address.trim()) issues.push('Address (house / street) is empty');
+    if (!city.trim()) issues.push('City is empty');
+    if (!stateName.trim()) issues.push('State is empty');
+    if (!pincode.trim() || !/^[0-9]{6}$/.test(pincode.trim()))
+      issues.push('Pincode must be exactly 6 digits (e.g. 400001)');
+    if (!password || password.length < 6)
+      issues.push('Password must be at least 6 characters');
+    if (password !== confirmPassword)
+      issues.push('Password and Confirm password do not match');
+    return issues;
   };
 
-  const validateStep2 = () => {
-    if (!businessName.trim()) return 'Please enter your business name';
-    if (!businessDescription.trim()) return 'Please describe your business';
-    if (!productsOffered.trim()) return 'Please list the products / services you offer';
+  const validateStep2 = (): string[] => {
+    const issues: string[] = [];
+    if (!businessName.trim()) issues.push('Business name is empty');
+    if (!businessDescription.trim()) issues.push('Business description is empty');
+    if (!productsOffered.trim())
+      issues.push('Products / services offered is empty (comma-separated list)');
     if (!yearsInBusiness.trim() || Number.isNaN(Number(yearsInBusiness)) || Number(yearsInBusiness) < 0)
-      return 'Please enter years in business';
-    if (!docs.pan) return 'PAN Card is required';
-    if (!docs.bankProof) return 'Bank Proof is required';
-    return null;
+      issues.push('Years in business must be a valid non-negative number');
+    if (!docs.pan) issues.push('PAN Card document is required (PDF / JPG / PNG)');
+    if (!docs.bankProof) issues.push('Bank Proof document is required (PDF / JPG / PNG)');
+    return issues;
   };
 
   const handleNext = () => {
-    const err = validateStep1();
-    if (err) {
-      Alert.alert('Missing info', err);
+    const issues = validateStep1();
+    if (issues.length) {
+      showError(
+        'Please fix these before continuing',
+        'A few fields in Step 1 need your attention:',
+        { checklist: issues }
+      );
+      setErrorMsg(issues[0]);
       return;
     }
+    setErrorMsg(null);
     setStep(1);
   };
 
@@ -283,12 +342,51 @@ export default function RegisterScreen({ navigation }: any) {
     }
   };
 
+  const showError = (title: string, message: string, extra?: Partial<ErrorPopup>) => {
+    setErrorMsg(message);
+    setErrorPopup({
+      visible: true,
+      title,
+      message,
+      checklist: undefined,
+      primaryLabel: undefined,
+      onPrimary: undefined,
+      secondaryLabel: undefined,
+      onSecondary: undefined,
+      ...extra,
+    });
+  };
+
   const handleSubmit = async () => {
-    const err = validateStep2();
-    if (err) {
-      Alert.alert('Missing info', err);
+    const issues = validateStep2();
+    if (issues.length) {
+      showError(
+        'Please fix these before submitting',
+        'A few things are still missing in your application:',
+        { checklist: issues }
+      );
       return;
     }
+    // Also double-check Step 1 in case the user went back and cleared something.
+    const step1Issues = validateStep1();
+    if (step1Issues.length) {
+      showError(
+        'Step 1 is incomplete',
+        'Please go back to Step 1 and fix the following:',
+        {
+          checklist: step1Issues,
+          primaryLabel: 'GO TO STEP 1',
+          onPrimary: () => {
+            setErrorPopup((p) => ({ ...p, visible: false }));
+            setStep(0);
+          },
+          secondaryLabel: 'DISMISS',
+          onSecondary: () => setErrorPopup((p) => ({ ...p, visible: false })),
+        }
+      );
+      return;
+    }
+    setErrorMsg(null);
     setSubmitting(true);
     try {
       const payload = {
@@ -296,64 +394,183 @@ export default function RegisterScreen({ navigation }: any) {
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
         password,
+        // Send a flat address object. Server /auth/register accepts both
+        // nested `address` and flat `street/city/state/pincode` fields.
+        address: {
+          street: address.trim(),
+          city: city.trim(),
+          state: stateName.trim(),
+          pincode: pincode.trim(),
+          country: 'India',
+        },
+        street: address.trim(),
         city: city.trim(),
         state: stateName.trim(),
+        pincode: pincode.trim(),
         businessName: businessName.trim(),
-        gstNumber: gstNumber.trim().toUpperCase(),
-        panNumber: panNumber.trim().toUpperCase(),
       };
 
-      // Register — store forces role/userType='supplier'. Will throw 'pending_approval'
-      // after persisting token to AsyncStorage; we handle either outcome.
-      let registered = false;
-      try {
-        await register(payload);
-        registered = true;
-      } catch (regErr: any) {
-        const msg = regErr?.response?.data?.message || regErr?.message || '';
-        if (msg === 'pending_approval') {
-          registered = true; // account exists; continue to upload
-        } else {
-          throw regErr;
-        }
-      }
+      console.log('Submitting registration:', JSON.stringify(payload, null, 2));
 
-      if (!registered) throw new Error('Registration failed');
+      // Register — store forces role/userType='supplier'. For suppliers the
+      // server ALWAYS returns accountStatus='pending' and the store resolves
+      // with { pending: true }. We must NOT early-return here, because then
+      // the KYC documents the user just uploaded would be thrown away.
+      // Instead: register first, then proceed to upload KYC while we still
+      // have the freshly-issued token in AsyncStorage.
+      await register(payload);
 
       // Upload multi-slot KYC documents + business detail fields.
+      // GST/PAN numbers are no longer sent — admin reads them off the PDF.
       const token = (await AsyncStorage.getItem('@urbanav_token')) || undefined;
       const products = productsOffered
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
-      await authAPI.uploadKycDocuments(
-        {
-          pan: docs.pan,
-          aadhaar: docs.aadhaar,
-          bankProof: docs.bankProof,
-          gst: docs.gst,
-        },
-        {
-          businessName: businessName.trim(),
-          businessDescription: businessDescription.trim(),
-          productsOffered: products,
-          yearsInBusiness: yearsInBusiness.trim(),
-          gstNumber: gstNumber.trim().toUpperCase(),
-          panNumber: panNumber.trim().toUpperCase(),
-        },
-        token
-      );
+
+      let kycUploadFailed = false;
+      let kycErrorMessage = '';
+      try {
+        await authAPI.uploadKycDocuments(
+          {
+            pan: docs.pan,
+            aadhaar: docs.aadhaar,
+            bankProof: docs.bankProof,
+            gst: docs.gst,
+          },
+          {
+            businessName: businessName.trim(),
+            businessDescription: businessDescription.trim(),
+            productsOffered: products,
+            yearsInBusiness: yearsInBusiness.trim(),
+          },
+          token
+        );
+      } catch (kycErr: any) {
+        // KYC upload failed but account is already created. Don't block the
+        // user — they can upload documents later from My Documents screen.
+        console.warn('KYC upload failed (account still created):', kycErr?.response?.data || kycErr?.message);
+        kycUploadFailed = true;
+        kycErrorMessage =
+          kycErr?.response?.data?.message ||
+          kycErr?.message ||
+          'Could not upload your documents.';
+      }
 
       setSubmitting(false);
-      Alert.alert(
-        'Account submitted',
-        "Your supplier application has been submitted. Our team will review your documents within 24\u201348 hours. You'll receive an email once approved.",
-        [{ text: 'OK', onPress: () => navigation.replace('Login') }]
-      );
+
+      if (kycUploadFailed) {
+        // Tell the supplier exactly what happened with the documents, but
+        // make it clear the account was still created so they don't retry
+        // register() and hit the "email already exists" wall.
+        showError(
+          'Documents upload failed',
+          `Your account was created but we couldn't upload your documents: ${kycErrorMessage}. You can upload them later from "My Documents".`,
+          {
+            primaryLabel: 'CONTINUE ANYWAY',
+            onPrimary: () => {
+              setErrorPopup((p) => ({ ...p, visible: false }));
+              setSuccessPopup({ visible: true, kycUploaded: false });
+            },
+            secondaryLabel: 'DISMISS',
+            onSecondary: () => setErrorPopup((p) => ({ ...p, visible: false })),
+          }
+        );
+        return;
+      }
+
+      // All good — show the pending-approval success popup. The supplier
+      // taps the CTA to continue to the full PendingApproval status screen.
+      setSuccessPopup({ visible: true, kycUploaded: true });
     } catch (e: any) {
       setSubmitting(false);
-      const msg = e?.response?.data?.message || e?.message || 'Could not submit your account';
-      Alert.alert('Registration error', msg);
+      const status = e?.response?.status;
+      const apiMsg = e?.response?.data?.message || e?.message || '';
+      const apiErrorDetail = e?.response?.data?.error || '';
+      console.error('Registration error:', status, JSON.stringify(e?.response?.data || e, null, 2));
+
+      // Map the server error to a clear, supplier-friendly popup.
+      let title = 'Registration failed';
+      let friendly = 'Could not submit your account. Please try again.';
+      let extra: Partial<ErrorPopup> = {};
+
+      // Build a field checklist comparing what we sent vs what might be missing.
+      // This helps the supplier pinpoint the exact field the server rejected.
+      const buildFieldChecklist = (): string[] => {
+        const list: string[] = [];
+        if (!fullName.trim()) list.push('❌ Full name is empty');
+        if (!email.trim()) list.push('❌ Email is empty');
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) list.push('❌ Email format looks invalid');
+        if (!phone.trim()) list.push('❌ Phone number is empty');
+        else if (phone.replace(/\D/g, '').length < 10) list.push('❌ Phone must be 10 digits');
+        if (!password || password.length < 6) list.push('❌ Password is too short (min 6)');
+        if (!businessName.trim()) list.push('❌ Business name is empty');
+        if (!pincode.trim() || !/^[0-9]{6}$/.test(pincode.trim())) list.push('❌ Pincode must be 6 digits');
+        return list;
+      };
+
+      if (/already exists/i.test(apiMsg)) {
+        title = 'Email already registered';
+        friendly =
+          'An account with this email already exists. Please sign in instead, or use a different email to register.';
+        extra = {
+          primaryLabel: 'GO TO SIGN IN',
+          onPrimary: () => {
+            setErrorPopup((p) => ({ ...p, visible: false }));
+            navigation.replace('Login');
+          },
+          secondaryLabel: 'USE DIFFERENT EMAIL',
+          onSecondary: () => {
+            setErrorPopup((p) => ({ ...p, visible: false }));
+            setStep(0);
+          },
+        };
+      } else if (/pincode/i.test(apiMsg)) {
+        title = 'Invalid pincode';
+        friendly = 'Pincode must be a valid 6-digit Indian PIN code (e.g. 400001).';
+        extra = {
+          primaryLabel: 'FIX PINCODE',
+          onPrimary: () => {
+            setErrorPopup((p) => ({ ...p, visible: false }));
+            setStep(0);
+          },
+        };
+      } else if (/provide (email|password|name|phone)|required|Validation/i.test(apiMsg + ' ' + apiErrorDetail)) {
+        title = 'Some fields need your attention';
+        friendly =
+          'The server rejected the application because one or more fields were missing or invalid. Please check the list below:';
+        const checklist = buildFieldChecklist();
+        extra = {
+          checklist: checklist.length ? checklist : [
+            'Server said: ' + (apiMsg || apiErrorDetail || 'a required field was missing'),
+            'Re-open Step 1 & Step 2 and make sure every field is filled correctly.',
+          ],
+          primaryLabel: 'REVIEW STEP 1',
+          onPrimary: () => {
+            setErrorPopup((p) => ({ ...p, visible: false }));
+            setStep(0);
+          },
+          secondaryLabel: 'STAY HERE',
+          onSecondary: () => setErrorPopup((p) => ({ ...p, visible: false })),
+        };
+      } else if (/network|timeout|Network Error/i.test(apiMsg) || !status) {
+        title = 'Connection problem';
+        friendly =
+          "We couldn't reach the UrbanAV servers. Check your internet connection and try again.";
+      } else if (status === 400) {
+        title = 'Registration rejected';
+        friendly = apiMsg || 'The server rejected your application. Please review your details and try again.';
+        // Still give the supplier a checklist of what we can see.
+        const checklist = buildFieldChecklist();
+        if (checklist.length) extra = { checklist };
+      } else if (status >= 500) {
+        title = 'Server error';
+        friendly = apiMsg || 'Our servers hit an unexpected error. Please try again in a moment.';
+      } else if (apiMsg) {
+        friendly = apiMsg;
+      }
+
+      showError(title, friendly, extra);
     }
   };
 
@@ -430,6 +647,12 @@ export default function RegisterScreen({ navigation }: any) {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {errorMsg ? (
+              <View style={styles.errorBanner}>
+                <AlertCircle size={16} color={SEMANTIC.error} strokeWidth={2} />
+                <Text style={styles.errorBannerText}>{errorMsg}</Text>
+              </View>
+            ) : null}
             {step === 0 ? (
               <View>
                 <Text style={styles.heroTitle}>Tell us about you</Text>
@@ -461,6 +684,14 @@ export default function RegisterScreen({ navigation }: any) {
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
                 />
+                <GlassField
+                  Icon={Home}
+                  label="Address"
+                  placeholder="House / Flat no, Street, Area"
+                  value={address}
+                  onChangeText={setAddress}
+                  autoCapitalize="words"
+                />
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ flex: 1 }}>
                     <GlassField
@@ -483,6 +714,14 @@ export default function RegisterScreen({ navigation }: any) {
                     />
                   </View>
                 </View>
+                <GlassField
+                  Icon={Hash}
+                  label="Pincode"
+                  placeholder="400001"
+                  value={pincode}
+                  onChangeText={(t: string) => setPincode(t.replace(/\D/g, '').slice(0, 6))}
+                  keyboardType="number-pad"
+                />
                 <GlassField
                   Icon={Lock}
                   label="Password"
@@ -573,28 +812,11 @@ export default function RegisterScreen({ navigation }: any) {
                   keyboardType="number-pad"
                 />
 
-                <GlassField
-                  Icon={Hash}
-                  label="GST number (optional)"
-                  placeholder="22AAAAA0000A1Z5"
-                  value={gstNumber}
-                  onChangeText={(t: string) => setGstNumber(t.toUpperCase())}
-                  autoCapitalize="characters"
-                />
-                <GlassField
-                  Icon={Hash}
-                  label="PAN number (optional)"
-                  placeholder="ABCDE1234F"
-                  value={panNumber}
-                  onChangeText={(t: string) => setPanNumber(t.toUpperCase())}
-                  autoCapitalize="characters"
-                />
-
                 <Text style={[styles.fieldLabel, { marginTop: 6 }]}>Documents</Text>
                 <View style={styles.docsIntro}>
                   <FileText size={14} color={NEON.glow} strokeWidth={1.8} />
                   <Text style={styles.docsIntroText}>
-                    Upload required documents (PDF, JPG, PNG · Max 5 MB each)
+                    Upload required documents (PDF, JPG, PNG · Max 5 MB each). Admin verifies your GST / PAN from these documents.
                   </Text>
                 </View>
 
@@ -714,6 +936,137 @@ export default function RegisterScreen({ navigation }: any) {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      {/* Error popup — shown for API / upload failures so the supplier
+          clearly knows what went wrong and what to do next. */}
+      <Modal
+        visible={errorPopup.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setErrorPopup((p) => ({ ...p, visible: false }))}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <LinearGradient
+              colors={GRADIENT.appBg as string[]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.modalIconWrap}>
+              <View style={styles.modalIconErrorBg}>
+                <XCircle size={36} color={SEMANTIC.error} strokeWidth={2} />
+              </View>
+            </View>
+            <Text style={styles.modalTitle}>{errorPopup.title}</Text>
+            <Text style={styles.modalBody}>{errorPopup.message}</Text>
+
+            {errorPopup.checklist && errorPopup.checklist.length > 0 ? (
+              <View style={styles.checklistBox}>
+                {errorPopup.checklist.map((item, idx) => (
+                  <View key={`${idx}-${item}`} style={styles.checklistRow}>
+                    <View style={styles.checklistBullet}>
+                      <AlertCircle size={12} color={SEMANTIC.error} strokeWidth={2.2} />
+                    </View>
+                    <Text style={styles.checklistText}>{item.replace(/^❌\s*/, '')}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            <TouchableOpacity
+              onPress={() => {
+                if (errorPopup.onPrimary) errorPopup.onPrimary();
+                else setErrorPopup((p) => ({ ...p, visible: false }));
+              }}
+              activeOpacity={0.85}
+              style={styles.modalPrimaryBtn}
+            >
+              <LinearGradient
+                colors={GRADIENT.brand as string[]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Text style={styles.modalPrimaryBtnText}>
+                {errorPopup.primaryLabel || 'OK, GOT IT'}
+              </Text>
+            </TouchableOpacity>
+
+            {errorPopup.secondaryLabel ? (
+              <TouchableOpacity
+                onPress={() => {
+                  if (errorPopup.onSecondary) errorPopup.onSecondary();
+                  else setErrorPopup((p) => ({ ...p, visible: false }));
+                }}
+                activeOpacity={0.85}
+                style={styles.modalSecondaryBtn}
+              >
+                <Text style={styles.modalSecondaryBtnText}>
+                  {errorPopup.secondaryLabel}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Success / pending-approval popup — shown immediately after submit.
+          Tapping CONTINUE sends the supplier to the full PendingApproval
+          status screen (which is the admin-gate waiting room). */}
+      <Modal
+        visible={successPopup.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <LinearGradient
+              colors={GRADIENT.appBg as string[]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.modalIconWrap}>
+              <View style={styles.modalIconSuccessBg}>
+                <ShieldCheck size={40} color={NEON.glow} strokeWidth={1.8} />
+              </View>
+            </View>
+            <Text style={styles.modalTitle}>Application submitted</Text>
+            <Text style={styles.modalBody}>
+              {successPopup.kycUploaded
+                ? 'Your supplier account is created and your KYC documents have been sent for review. Our team will verify your details within 24–48 hours.'
+                : 'Your supplier account is created. You can upload your KYC documents later from “My Documents” inside the app. Admin will review and activate your account after receiving all documents.'}
+            </Text>
+
+            <View style={styles.pendingPill}>
+              <Clock size={13} color={SEMANTIC.warning} strokeWidth={2.2} />
+              <Text style={styles.pendingPillText}>Pending admin approval</Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => {
+                setSuccessPopup({ visible: false, kycUploaded: false });
+                navigation.replace('PendingApproval', {
+                  email: email.trim().toLowerCase(),
+                  kycUploaded: successPopup.kycUploaded,
+                });
+              }}
+              activeOpacity={0.85}
+              style={styles.modalPrimaryBtn}
+            >
+              <LinearGradient
+                colors={GRADIENT.brand as string[]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Text style={styles.modalPrimaryBtnText}>CONTINUE</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -1083,5 +1436,164 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     color: TEXT.secondary,
     textTransform: 'uppercase',
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 85, 85, 0.45)',
+    backgroundColor: 'rgba(255, 85, 85, 0.10)',
+    marginBottom: 14,
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: 12.5,
+    color: SEMANTIC.error,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  // Modal popup (error + pending-approval success)
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(8, 3, 18, 0.78)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: 'rgba(247, 217, 255, 0.25)',
+    paddingHorizontal: 22,
+    paddingTop: 26,
+    paddingBottom: 20,
+    overflow: 'hidden',
+    backgroundColor: SURFACE.base,
+  },
+  modalIconWrap: {
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  modalIconErrorBg: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 85, 85, 0.45)',
+    backgroundColor: 'rgba(255, 85, 85, 0.14)',
+  },
+  modalIconSuccessBg: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(230, 102, 255, 0.5)',
+    backgroundColor: 'rgba(230, 102, 255, 0.14)',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: TEXT.primary,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+    marginBottom: 8,
+  },
+  modalBody: {
+    fontSize: 13.5,
+    lineHeight: 20,
+    color: 'rgba(247, 217, 255, 0.7)',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  pendingPill: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 191, 71, 0.45)',
+    backgroundColor: 'rgba(255, 191, 71, 0.12)',
+    marginBottom: 18,
+  },
+  pendingPillText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    letterSpacing: 1.1,
+    color: SEMANTIC.warning,
+    textTransform: 'uppercase',
+  },
+  modalPrimaryBtn: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(247, 217, 255, 0.35)',
+    overflow: 'hidden',
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  modalPrimaryBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1.4,
+  },
+  modalSecondaryBtn: {
+    marginTop: 10,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: GLASS.tier1Border,
+    backgroundColor: GLASS.tier2,
+  },
+  modalSecondaryBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: TEXT.secondary,
+    letterSpacing: 1.3,
+  },
+  checklistBox: {
+    marginBottom: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 85, 85, 0.35)',
+    backgroundColor: 'rgba(255, 85, 85, 0.08)',
+    gap: 8,
+  },
+  checklistRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  checklistBullet: {
+    width: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  checklistText: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: TEXT.primary,
+    fontWeight: '500',
   },
 });
