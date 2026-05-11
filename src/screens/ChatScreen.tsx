@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +17,8 @@ import { Avatar } from '../components/ui';
 import { NEON, SURFACE, GLASS, TEXT, GRADIENT, SEMANTIC } from '../theme/colors';
 import { SPACING, RADIUS } from '../theme/spacing';
 import { TYPE } from '../theme/typography';
+import { chatAPI } from '../api';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Client-side phone masking (mirrors server-side regex)
 // Shows a warning badge rather than raw digits if the server wasn't called
@@ -48,63 +52,101 @@ interface Message {
   read: boolean;
 }
 
-const MOCK: Message[] = [
-  {
-    id: '1', senderId: 'supplier', kind: 'text',
-    message: 'Hello! How can I help you with the equipment rental?',
-    timestamp: new Date(Date.now() - 3600000), read: true,
-  },
-  {
-    id: '2', senderId: 'buyer', kind: 'text',
-    message: 'Hi! I need the projector for a 2-day event. Is it available?',
-    timestamp: new Date(Date.now() - 3500000), read: true,
-  },
-  {
-    id: '3', senderId: 'supplier', kind: 'quote', price: 28500,
-    message: 'Yes! Here is my best quote for the projector + screen package.',
-    timestamp: new Date(Date.now() - 3400000), read: true,
-  },
-];
-
 // ─── ChatScreen ───────────────────────────────────────────────────────────────
 export default function ChatScreen({ route, navigation }: any) {
-  const { orderId, supplierName } = route.params || {};
-  const [messages, setMessages] = useState<Message[]>(MOCK);
+  const { orderId, buyerName, chatId: initialChatId } = route.params || {};
+  const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
+  const [chatId, setChatId] = useState<string | null>(initialChatId || null);
+  const [loading, setLoading] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
-  const currentUserId = 'buyer';
+  const currentUserId = route.params?.userId || 'current-user';
 
+  // Load chat and messages
+  const loadChat = useCallback(async () => {
+    if (!orderId) return;
+    
+    try {
+      setLoading(true);
+      
+      // Get or create chat for this order
+      if (!chatId) {
+        const chatRes = await chatAPI.getChatByOrder(orderId);
+        const newChatId = chatRes.data?.chat?._id || chatRes.data?.chat?.id;
+        if (newChatId) {
+          setChatId(newChatId);
+        }
+      }
+      
+      // Fetch messages
+      const messagesRes = await chatAPI.getMessages(chatId || initialChatId);
+      const msgs = messagesRes.data?.messages || messagesRes.data || [];
+      
+      // Transform messages to our format
+      const formatted = msgs.map((msg: any) => ({
+        id: msg._id || msg.id || Date.now().toString(),
+        senderId: msg.senderId?._id || msg.senderId || msg.sender,
+        message: msg.message || '',
+        kind: (msg.type || msg.kind || 'text') as MsgKind,
+        price: msg.price,
+        timestamp: new Date(msg.createdAt || msg.timestamp || Date.now()),
+        read: msg.read || false,
+      }));
+      
+      setMessages(formatted);
+    } catch (error: any) {
+      console.error('Failed to load chat:', error);
+      setMessages([]);
+      if (error?.response?.status !== 404) {
+        Alert.alert('Error', 'Failed to load chat messages');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId, chatId, initialChatId]);
+
+  // Load on mount
   useEffect(() => {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    loadChat();
+  }, [loadChat]);
+
+  // Refresh when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      loadChat();
+    }, [loadChat])
+  );
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    }
   }, [messages]);
 
-  const send = () => {
+  // Send message via API
+  const send = async () => {
     const raw = draft.trim();
-    if (!raw) return;
-    const { text: safe } = maskLocal(raw);
-    const msg: Message = {
-      id: Date.now().toString(),
-      senderId: currentUserId,
-      kind: 'text',
-      message: safe,
-      timestamp: new Date(),
-      read: false,
-    };
-    setMessages((p) => [...p, msg]);
-    setDraft('');
-    setTimeout(() => {
-      setMessages((p) => [
-        ...p,
-        {
-          id: (Date.now() + 1).toString(),
-          senderId: 'supplier',
-          kind: 'text',
-          message: "Thanks for your message! I'll get back to you shortly.",
-          timestamp: new Date(),
-          read: false,
-        },
-      ]);
-    }, 2000);
+    if (!raw || !chatId) return;
+    
+    try {
+      const { text: safe, wasMasked } = maskLocal(raw);
+      
+      await chatAPI.sendMessage(chatId, {
+        message: safe,
+        type: 'text',
+      });
+      
+      setDraft('');
+      await loadChat();
+      
+      if (wasMasked) {
+        Alert.alert('Notice', 'Phone numbers are automatically hidden.');
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      Alert.alert('Error', 'Failed to send message. Please try again.');
+    }
   };
 
   const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -145,8 +187,23 @@ export default function ChatScreen({ route, navigation }: any) {
           </View>
 
           {/* Messages */}
-          <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: SPACING.base, gap: 10 }}>
-            {messages.map((msg) => {
+          {loading ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="large" color={NEON.purple} />
+            </View>
+          ) : (
+            <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: SPACING.base, gap: 10 }}>
+              {messages.length === 0 ? (
+                <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1, paddingVertical: SPACING['3xl'] }}>
+                  <Text style={[TYPE.h4, { color: TEXT.primary, marginBottom: SPACING.xs }]}>
+                    No messages yet
+                  </Text>
+                  <Text style={[TYPE.body, { color: TEXT.tertiary, textAlign: 'center' }]}>
+                    Start the conversation with {buyerName || 'the buyer'}!
+                  </Text>
+                </View>
+              ) : (
+                messages.map((msg) => {
               const mine = msg.senderId === currentUserId;
               const isQuote = msg.kind === 'quote' || msg.kind === 'counter' || msg.kind === 'accept';
 
@@ -205,8 +262,10 @@ export default function ChatScreen({ route, navigation }: any) {
                   </View>
                 </View>
               );
-            })}
-          </ScrollView>
+                })
+              )}
+            </ScrollView>
+          )}
 
           {/* Input bar */}
           <View style={{
