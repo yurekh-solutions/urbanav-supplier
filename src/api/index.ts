@@ -195,9 +195,12 @@ export const availabilityAPI = {
 
 export const requirementAPI = {
   // Supplier browses open buyer requirements (marketplace feed).
-  browse: (params?: { city?: string; eventType?: string; item?: string; status?: string; limit?: number }) =>
+  browse: (params?: { city?: string; eventType?: string; item?: string; status?: string; filter?: string; limit?: number }) =>
     api.get('/requirements', { params }),
   getById: (id: string) => api.get(`/requirements/${id}`),
+  // Submit a competitive offer on a requirement
+  sendOffer: (id: string, data: { price: number; note?: string }) =>
+    api.post(`/requirements/${id}/offer`, data),
 };
 
 export const otpAPI = {
