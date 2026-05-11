@@ -194,19 +194,21 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                 onPress={() => setActiveTab(f.value)}
                 activeOpacity={0.8}
                 style={{
-                  paddingHorizontal: 14,
+                  paddingHorizontal: 16,
                   paddingVertical: 8,
                   borderRadius: RADIUS.full,
                   marginRight: SPACING.sm,
                   backgroundColor: selected ? NEON.purple : 'rgba(255,255,255,0.6)',
                   borderWidth: 1,
                   borderColor: selected ? NEON.glow : 'rgba(180,150,220,0.35)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
                 <Text
                   style={[
                     TYPE.label,
-                    { color: selected ? '#FFF' : LIGHT.textSecondary, fontWeight: '600' },
+                    { color: selected ? '#FFF' : LIGHT.textSecondary, fontWeight: '600', textAlign: 'center' },
                   ]}
                 >
                   {f.label}

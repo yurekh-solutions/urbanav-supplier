@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   Plus,
   ClipboardList,
+  User,
 } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
@@ -88,17 +89,6 @@ function SupplierTabs() {
         }}
       />
       <Tab.Screen
-        name="Equipment"
-        component={MyEquipmentScreen}
-        options={{
-          tabBarIcon: ({ focused, color }: any) => (
-            <TabBounce focused={focused}>
-              <Package size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
-            </TabBounce>
-          ),
-        }}
-      />
-      <Tab.Screen
         name="Browse"
         component={BrowseRequirementsScreen}
         options={{
@@ -169,6 +159,18 @@ function SupplierTabs() {
           tabBarIcon: ({ focused, color }: any) => (
             <TabBounce focused={focused}>
               <ShoppingCart size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+            </TabBounce>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ focused, color }: any) => (
+            <TabBounce focused={focused}>
+              <User size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
             </TabBounce>
           ),
         }}

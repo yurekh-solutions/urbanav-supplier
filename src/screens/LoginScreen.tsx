@@ -15,17 +15,17 @@ import {
   Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Eye, EyeOff, ArrowLeft, CheckCircle2, ArrowRight } from 'lucide-react-native';
+import { Eye, EyeOff, ArrowLeft, CheckCircle2, ArrowRight, AlertCircle } from 'lucide-react-native';
 import { ScreenBackground, SEMANTIC, SPACING, RADIUS, NEON } from '../components/ui';
 import { useAuthStore } from '../store';
 
 const LOGO = require('../../assets/logo.jpg');
 
 // ── Glass tokens ────────────────────────────────────────────────────────
-const GLASS_BG     = 'rgba(247, 217, 255, 0.06)';
-const GLASS_BG2    = 'rgba(247, 217, 255, 0.04)';
-const GLASS_BORDER = 'rgba(247, 217, 255, 0.12)';
-const GLASS_BORDER_H = 'rgba(123, 37, 244, 0.5)';
+const GLASS_BG     = 'rgba(247, 217, 255, 0.10)';
+const GLASS_BG2    = 'rgba(247, 217, 255, 0.08)';
+const GLASS_BORDER = 'rgba(247, 217, 255, 0.25)';
+const GLASS_BORDER_H = 'rgba(123, 37, 244, 0.7)';
 
 // ── Shared glass input ──────────────────────────────────────────────────
 function GlassInput({
@@ -45,7 +45,7 @@ function GlassInput({
         <TextInput
           style={styles.inputField}
           placeholder={placeholder}
-          placeholderTextColor="rgba(247, 217, 255, 0.28)"
+          placeholderTextColor="rgba(247, 217, 255, 0.6)"
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry}
@@ -67,6 +67,10 @@ function LoginContent({ navigation }: any) {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [rejectionModal, setRejectionModal] = useState<{
+    visible: boolean;
+    reason: string;
+  }>({ visible: false, reason: '' });
   const { login, isLoading } = useAuthStore();
 
   // Pulse animation for the approval modal checkmark
@@ -85,8 +89,19 @@ function LoginContent({ navigation }: any) {
           Animated.timing(pulseAnim, { toValue: 0, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
         ]).start(() => setShowApprovalModal(true));
       }
-    } catch {
-      setError('Invalid email or password. Please try again.');
+    } catch (err: any) {
+      const errorCode = err?.response?.data?.code;
+      const errorMsg = err?.response?.data?.message || 'Invalid email or password. Please try again.';
+      
+      // Handle rejected account
+      if (errorCode === 'ACCOUNT_REJECTED') {
+        setRejectionModal({
+          visible: true,
+          reason: err?.response?.data?.rejectionReason || 'Your KYC application was rejected by the admin team.',
+        });
+      } else {
+        setError(errorMsg);
+      }
     }
   };
 
@@ -124,8 +139,8 @@ function LoginContent({ navigation }: any) {
             <View style={styles.eyeWrap}>
               <TouchableOpacity onPress={() => setShowPw(!showPw)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 {showPw
-                  ? <EyeOff size={20} color="rgba(247,217,255,0.55)" />
-                  : <Eye size={20} color="rgba(247,217,255,0.55)" />}
+                  ? <EyeOff size={20} color="rgba(247,217,255,0.8)" />
+                  : <Eye size={20} color="rgba(247,217,255,0.8)" />}
               </TouchableOpacity>
             </View>
           }
@@ -178,6 +193,36 @@ function LoginContent({ navigation }: any) {
             >
               <View style={styles.modalBtnInner}>
                 <Text style={styles.modalBtnText}>START SELLING</Text>
+                <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.5} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Rejection Modal */}
+      <Modal
+        visible={rejectionModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRejectionModal({ visible: false, reason: '' })}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalIconWrap}>
+              <AlertCircle size={48} color={SEMANTIC.error} strokeWidth={2} />
+            </View>
+            <Text style={styles.modalTitle}>Account Rejected</Text>
+            <Text style={styles.modalSub}>
+              {rejectionModal.reason}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setRejectionModal({ visible: false, reason: '' })}
+              activeOpacity={0.85}
+              style={styles.modalBtn}
+            >
+              <View style={styles.modalBtnInner}>
+                <Text style={styles.modalBtnText}>CONTACT SUPPORT</Text>
                 <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.5} />
               </View>
             </TouchableOpacity>
@@ -239,7 +284,7 @@ function RegisterContent({ navigation }: any) {
   return (
     <>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow} activeOpacity={0.7}>
-        <ArrowLeft size={20} color="rgba(247, 217, 255, 0.5)" />
+        <ArrowLeft size={20} color="rgba(247, 217, 255, 0.85)" />
         <Text style={styles.backText}>Back</Text>
       </TouchableOpacity>
 
@@ -287,8 +332,8 @@ function RegisterContent({ navigation }: any) {
             <View style={styles.eyeWrap}>
               <TouchableOpacity onPress={() => setShowPw(!showPw)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 {showPw
-                  ? <EyeOff size={20} color="rgba(247,217,255,0.55)" />
-                  : <Eye size={20} color="rgba(247,217,255,0.55)" />}
+                  ? <EyeOff size={20} color="rgba(247,217,255,0.8)" />
+                  : <Eye size={20} color="rgba(247,217,255,0.8)" />}
               </TouchableOpacity>
             </View>
           }
@@ -409,7 +454,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
     marginBottom: SPACING.lg, paddingVertical: 4,
   },
-  backText: { fontSize: 13, color: 'rgba(247, 217, 255, 0.5)', fontWeight: '500' },
+  backText: { fontSize: 13, color: 'rgba(247, 217, 255, 0.85)', fontWeight: '500' },
 
   glassCard: {
     backgroundColor: GLASS_BG2,
@@ -425,7 +470,7 @@ const styles = StyleSheet.create({
 
   label: {
     fontSize: 10, fontWeight: '700', letterSpacing: 2.5,
-    color: 'rgba(247, 217, 255, 0.35)', marginBottom: SPACING.xs,
+    color: 'rgba(247, 217, 255, 0.75)', marginBottom: SPACING.xs,
   },
   labelFocused: { color: NEON.purple },
 
@@ -443,7 +488,7 @@ const styles = StyleSheet.create({
   },
   inputField: {
     flex: 1, fontSize: 15,
-    color: 'rgba(247, 217, 255, 0.9)',
+    color: 'rgba(247, 217, 255, 1.0)',
     paddingHorizontal: SPACING.base,
     paddingVertical: 13,
   },
@@ -478,7 +523,7 @@ const styles = StyleSheet.create({
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.base, marginBottom: SPACING.base },
   dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(247, 217, 255, 0.1)' },
-  dividerText: { fontSize: 11, color: 'rgba(247, 217, 255, 0.25)', fontWeight: '600', letterSpacing: 0.8 },
+  dividerText: { fontSize: 11, color: 'rgba(247, 217, 255, 0.6)', fontWeight: '600', letterSpacing: 0.8 },
 
   glassOutlineBtn: {
     backgroundColor: GLASS_BG,
@@ -534,7 +579,7 @@ const styles = StyleSheet.create({
   },
   modalSub: {
     fontSize: 14,
-    color: 'rgba(247, 217, 255, 0.65)',
+    color: 'rgba(247, 217, 255, 0.85)',
     textAlign: 'center',
     lineHeight: 21,
     marginBottom: SPACING.xl,

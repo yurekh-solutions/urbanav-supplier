@@ -331,25 +331,28 @@ export default function ProfileScreen({ navigation }: any) {
     [user?.address?.city, user?.address?.state, user?.addresses?.length, user?.kycStatus, stats.unread, isGuest, isSupplier]
   );
 
-  const quickActions = [
-    {
-      icon: Package,
-      label: 'My Orders',
-      onPress: () =>
-        isGuest ? promptSignIn() : navigation.navigate('Main', { screen: 'Orders' } as never),
-    },
-    {
-      icon: ShoppingCart,
-      label: 'Equipment',
-      onPress: () =>
-        isGuest ? promptSignIn() : navigation.navigate('Main', { screen: 'Equipment' } as never),
-    },
-    {
-      icon: Heart,
-      label: 'Earnings',
-      onPress: () => (isGuest ? promptSignIn() : navigation.navigate('Earnings' as never)),
-    },
-  ];
+  const quickActions = useMemo(
+    () => [
+      {
+        icon: Briefcase,
+        label: 'My Equipment',
+        onPress: () =>
+          isGuest ? promptSignIn() : navigation.navigate('MyEquipment' as never),
+      },
+      {
+        icon: FileText,
+        label: 'Browse Requirements',
+        onPress: () =>
+          isGuest ? promptSignIn() : navigation.navigate('BrowseRequirements' as never),
+      },
+      {
+        icon: CreditCard,
+        label: 'Earnings',
+        onPress: () => (isGuest ? promptSignIn() : navigation.navigate('Earnings' as never)),
+      },
+    ],
+    [isGuest]
+  );
 
   const initial = (user?.name || (isGuest ? 'G' : 'U'))
     .trim()
@@ -996,7 +999,7 @@ export default function ProfileScreen({ navigation }: any) {
           </View>
         </Modal>
 
-        {/* Logout confirmation modal (themed, replaces Alert.alert) */}
+        {/* Logout confirmation modal */}
         <Modal
           visible={logoutOpen}
           transparent
@@ -1008,7 +1011,7 @@ export default function ProfileScreen({ navigation }: any) {
             onPress={() => setLogoutOpen(false)}
             style={{
               flex: 1,
-              backgroundColor: 'rgba(10, 4, 20, 0.55)',
+              backgroundColor: 'rgba(10, 4, 20, 0.7)',
               alignItems: 'center',
               justifyContent: 'center',
               padding: 24,
@@ -1018,66 +1021,72 @@ export default function ProfileScreen({ navigation }: any) {
               activeOpacity={1}
               style={{
                 width: '100%',
-                maxWidth: 340,
-                backgroundColor: '#FFFFFF',
-                borderRadius: 20,
-                padding: 20,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.25,
-                shadowRadius: 24,
-                elevation: 12,
+                maxWidth: 360,
+                backgroundColor: LIGHT.card,
+                borderRadius: 24,
+                padding: 24,
+                shadowColor: NEON.purple,
+                shadowOffset: { width: 0, height: 12 },
+                shadowOpacity: 0.3,
+                shadowRadius: 28,
+                elevation: 16,
+                borderWidth: 1,
+                borderColor: LIGHT.divider,
               }}
             >
               <View
                 style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 26,
-                  backgroundColor: SEMANTIC.errorSoft,
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  backgroundColor: `${SEMANTIC.error}15`,
+                  borderWidth: 2,
+                  borderColor: `${SEMANTIC.error}30`,
                   alignItems: 'center',
                   justifyContent: 'center',
                   alignSelf: 'center',
-                  marginBottom: 12,
+                  marginBottom: 16,
                 }}
               >
-                <LogOut size={24} color={SEMANTIC.error} />
+                <LogOut size={28} color={SEMANTIC.error} strokeWidth={2} />
               </View>
               <Text
                 style={{
-                  fontSize: 18,
-                  fontWeight: '700',
+                  fontSize: 20,
+                  fontWeight: '800',
                   color: LIGHT.text,
                   textAlign: 'center',
-                  marginBottom: 6,
+                  marginBottom: 8,
+                  letterSpacing: -0.3,
                 }}
               >
                 Sign out of UrbanAV?
               </Text>
               <Text
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   color: LIGHT.textSecondary,
                   textAlign: 'center',
-                  lineHeight: 19,
-                  marginBottom: 18,
+                  lineHeight: 21,
+                  marginBottom: 24,
                 }}
               >
-                You will need to sign back in to view your orders, saved addresses and notifications.
+                You'll need to sign back in to manage your equipment, view orders, and access your dashboard.
               </Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
                 <TouchableOpacity
                   onPress={() => setLogoutOpen(false)}
                   style={{
                     flex: 1,
-                    paddingVertical: 12,
+                    paddingVertical: 14,
                     borderRadius: RADIUS.md,
-                    borderWidth: 1,
+                    borderWidth: 1.5,
                     borderColor: LIGHT.divider,
                     alignItems: 'center',
+                    backgroundColor: LIGHT.bg,
                   }}
                 >
-                  <Text style={{ color: LIGHT.text, fontWeight: '600' }}>Cancel</Text>
+                  <Text style={{ color: LIGHT.text, fontWeight: '700', fontSize: 14 }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={async () => {
@@ -1086,13 +1095,18 @@ export default function ProfileScreen({ navigation }: any) {
                   }}
                   style={{
                     flex: 1,
-                    paddingVertical: 12,
+                    paddingVertical: 14,
                     borderRadius: RADIUS.md,
                     backgroundColor: SEMANTIC.error,
                     alignItems: 'center',
+                    shadowColor: SEMANTIC.error,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 12,
+                    elevation: 8,
                   }}
                 >
-                  <Text style={{ color: '#fff', fontWeight: '700' }}>Sign out</Text>
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Sign Out</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
