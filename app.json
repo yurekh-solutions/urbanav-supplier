@@ -26,7 +26,9 @@
         "foregroundImage": "./assets/logo.jpg",
         "backgroundColor": "#140821"
       },
-      "package": "com.urbanav.supplier"
+      "package": "com.urbanav.supplier",
+      "versionCode": 1,
+      "permissions": []
     },
     "web": {
       "name": "UrbanAV Supplier",
