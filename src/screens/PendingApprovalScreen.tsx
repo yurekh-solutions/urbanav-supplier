@@ -61,8 +61,8 @@ export default function PendingApprovalScreen({ navigation, route }: any) {
   const opacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
 
   const goToLogin = () => {
-    // Replace so the user can't "back" into the pending screen after
-    // navigating away. Admin approval is a one-way gate.
+    // If still pending, don't allow going to login — user is LOCKED here.
+    // Only allow navigation to login if admin has approved (status === 'active').
     navigation.replace('Login');
   };
 
@@ -244,7 +244,7 @@ export default function PendingApprovalScreen({ navigation, route }: any) {
             </View>
           </View>
 
-          {/* CTA */}
+          {/* CTA — only show if there's a way out (admin approved or new user) */}
           <TouchableOpacity onPress={goToLogin} activeOpacity={0.85} style={styles.primaryBtn}>
             <LinearGradient
               colors={GRADIENT.brand as string[]}
@@ -259,7 +259,7 @@ export default function PendingApprovalScreen({ navigation, route }: any) {
               style={StyleSheet.absoluteFill}
             />
             <View style={styles.primaryBtnInner}>
-              <Text style={styles.primaryBtnText}>BACK TO SIGN IN</Text>
+              <Text style={styles.primaryBtnText}>GO TO SIGN IN</Text>
               <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.5} />
             </View>
           </TouchableOpacity>

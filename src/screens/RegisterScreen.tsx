@@ -111,8 +111,7 @@ function GlassField({
           colors={['rgba(247, 217, 255, 0.06)', 'rgba(247, 217, 255, 0.02)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}
         />
         {Icon ? <Icon size={18} color={focused ? NEON.glow : TEXT.tertiary} strokeWidth={1.8} /> : null}
         <TextInput

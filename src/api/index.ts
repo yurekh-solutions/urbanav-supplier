@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const API_URL = 'http://localhost:3002/api';
+const API_URL = 'http://localhost:4001/api';
 export const API_BASE = API_URL.replace(/\/api$/, '');
 
 /** Resolve a possibly-relative media URL (e.g. `/uploads/xxx.jpg`) to an absolute URL. */

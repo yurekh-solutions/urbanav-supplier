@@ -151,14 +151,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   checkAuth: async () => {
     try {
-      const [userStr, token, authenticated, onboarded] = await AsyncStorage.multiGet([
+      const [userStr, token, authenticated, onboarded, pendingStr] = await AsyncStorage.multiGet([
         '@urbanav_user',
         '@urbanav_token',
         '@urbanav_authenticated',
         '@urbanav_onboarded',
+        '@urbanav_pending',
       ]);
 
-      const hasOnboarded = onboarded[1] === 'true';
+      const isPending = pendingStr[1] === 'true';
+      const hasOnboarded = onboarded[1] === 'true' || isPending; // Pending users have "onboarded" (filled registration)
 
       if (authenticated[1] === 'true' && token[1] && userStr[1]) {
         const user = JSON.parse(userStr[1]);
@@ -170,6 +172,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isLoading: false,
         });
       } else {
+        // If pending, still set hasOnboarded so we skip Onboarding
+        // but keep isAuthenticated: false so they can't access main tabs
         set({ isLoading: false, hasOnboarded });
       }
     } catch (error) {

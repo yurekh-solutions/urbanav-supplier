@@ -180,7 +180,7 @@ function SupplierTabs() {
 }
 
 export default function App() {
-  const { isAuthenticated, isLoading, hasOnboarded, checkAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, hasOnboarded, checkAuth, user } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
@@ -233,12 +233,20 @@ export default function App() {
               <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
             </>
           ) : !isAuthenticated ? (
-            <>
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="Register" component={RegisterScreen} />
-              <Stack.Screen name="KYCForm" component={KYCFormScreen} />
-              <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
-            </>
+            // Unauthenticated but has onboarded — check if pending approval
+            user?.accountStatus === 'pending' || user?.kycStatus === 'pending' ? (
+              <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} initialParams={{
+                email: user?.email || '',
+                kycUploaded: user?.kycStatus === 'submitted' || user?.kycStatus === 'approved',
+              }} />
+            ) : (
+              <>
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Register" component={RegisterScreen} />
+                <Stack.Screen name="KYCForm" component={KYCFormScreen} />
+                <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
+              </>
+            )
           ) : (
             <>
               <Stack.Screen name="Main" component={SupplierTabs} />
