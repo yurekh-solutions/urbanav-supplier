@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Send, ChevronLeft, AlertTriangle } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Avatar } from '../components/ui';
 import { NEON, SURFACE, GLASS, TEXT, GRADIENT, SEMANTIC } from '../theme/colors';
 import { SPACING, RADIUS } from '../theme/spacing';
@@ -59,8 +60,23 @@ export default function ChatScreen({ route, navigation }: any) {
   const [draft, setDraft] = useState('');
   const [chatId, setChatId] = useState<string | null>(initialChatId || null);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   const scrollRef = useRef<ScrollView>(null);
-  const currentUserId = route.params?.userId || 'current-user';
+
+  // Load current user ID from AsyncStorage on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('@urbanav_user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setCurrentUserId(user._id || user.id || '');
+        }
+      } catch (err) {
+        console.error('Failed to load user ID:', err);
+      }
+    })();
+  }, []);
 
   // Load chat and messages
   const loadChat = useCallback(async () => {
@@ -166,9 +182,9 @@ export default function ChatScreen({ route, navigation }: any) {
             <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: SPACING.md }}>
               <ChevronLeft size={24} color={TEXT.primary} />
             </TouchableOpacity>
-            <Avatar name={supplierName || 'S'} size={38} />
+            <Avatar name={buyerName || 'B'} size={38} />
             <View style={{ flex: 1, marginLeft: SPACING.sm }}>
-              <Text style={[TYPE.h4, { color: TEXT.primary }]}>{supplierName || 'Supplier Chat'}</Text>
+              <Text style={[TYPE.h4, { color: TEXT.primary }]}>{buyerName || 'Buyer Chat'}</Text>
               <Text style={[TYPE.caption, { color: SEMANTIC.success }]}>Online</Text>
             </View>
           </View>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+ import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -469,7 +469,11 @@ export default function RegisterScreen({ navigation }: any) {
             primaryLabel: 'CONTINUE ANYWAY',
             onPrimary: () => {
               setErrorPopup((p) => ({ ...p, visible: false }));
-              setSuccessPopup({ visible: true, kycUploaded: false });
+              // Navigate directly to PendingApproval (skip success popup)
+              navigation.replace('PendingApproval', {
+                email: email.trim().toLowerCase(),
+                kycUploaded: false,
+              });
             },
             secondaryLabel: 'DISMISS',
             onSecondary: () => setErrorPopup((p) => ({ ...p, visible: false })),
@@ -478,10 +482,27 @@ export default function RegisterScreen({ navigation }: any) {
         return;
       }
 
-      // All good — show the pending-approval success popup. The supplier
-      // taps the CTA to continue to the full PendingApproval status screen.
-      setSuccessPopup({ visible: true, kycUploaded: true });
+      // All good — navigate DIRECTLY to PendingApproval screen.
+      // The popup modal was causing a blank screen issue, so we skip it
+      // and go straight to the full PendingApproval status screen.
+      console.log('✅ Registration successful! Navigating directly to PendingApproval...');
+      console.log('📧 Email:', email.trim().toLowerCase());
+      console.log('📄 KYC Uploaded:', !kycUploadFailed);
+      try {
+        navigation.replace('PendingApproval', {
+          email: email.trim().toLowerCase(),
+          kycUploaded: true,
+        });
+        console.log('✅ Successfully navigated to PendingApproval');
+      } catch (navError) {
+        console.error('❌ Navigation failed, trying fallback:', navError);
+        navigation.navigate('PendingApproval', {
+          email: email.trim().toLowerCase(),
+          kycUploaded: true,
+        });
+      }
     } catch (e: any) {
+      console.error(' Registration error occurred:', e?.message || e);
       setSubmitting(false);
       const status = e?.response?.status;
       const apiMsg = e?.response?.data?.message || e?.message || '';
@@ -1046,11 +1067,31 @@ export default function RegisterScreen({ navigation }: any) {
 
             <TouchableOpacity
               onPress={() => {
+                console.log('🔄 CONTINUE button pressed - navigating to PendingApproval');
+                console.log('📧 Email:', email.trim().toLowerCase());
+                console.log('📄 KYC Uploaded:', successPopup.kycUploaded);
+                
+                // Close the success popup first
                 setSuccessPopup({ visible: false, kycUploaded: false });
-                navigation.replace('PendingApproval', {
-                  email: email.trim().toLowerCase(),
-                  kycUploaded: successPopup.kycUploaded,
-                });
+                
+                // Small delay to ensure modal closes before navigation
+                setTimeout(() => {
+                  try {
+                    console.log('🚀 Calling navigation.replace to PendingApproval...');
+                    navigation.replace('PendingApproval', {
+                      email: email.trim().toLowerCase(),
+                      kycUploaded: successPopup.kycUploaded,
+                    });
+                    console.log('✅ Successfully navigated to PendingApproval');
+                  } catch (navError) {
+                    console.error('❌ Navigation failed:', navError);
+                    // Fallback: try navigate instead of replace
+                    navigation.navigate('PendingApproval', {
+                      email: email.trim().toLowerCase(),
+                      kycUploaded: successPopup.kycUploaded,
+                    });
+                  }
+                }, 150);
               }}
               activeOpacity={0.85}
               style={styles.modalPrimaryBtn}

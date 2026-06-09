@@ -29,11 +29,10 @@ import {
   RADIUS,
   TYPE,
 } from '../components/ui';
-import { ordersAPI } from '../api';
+import { ordersAPI, earningsAPI } from '../api';
 
-function formatINR(paise: number): string {
-  const rupees = Math.round(paise / 100);
-  return '₹' + rupees.toLocaleString('en-IN');
+function formatINR(amount: number): string {
+  return '₹' + amount.toLocaleString('en-IN');
 }
 
 export default function EarningsScreen({ navigation }: any) {
@@ -41,13 +40,29 @@ export default function EarningsScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [earnings, setEarnings] = useState<any>(null);
+
   const load = useCallback(async () => {
     try {
-      const res = await ordersAPI.getSupplierOrders();
-      const list: any[] = res.data?.orders ?? res.data ?? [];
-      setOrders(list);
+      // Try the earnings summary endpoint first (has settlement data)
+      const earningsRes = await earningsAPI.getSummary();
+      if (earningsRes.data?.success) {
+        setEarnings(earningsRes.data.earnings);
+        setOrders(earningsRes.data.orders ?? []);
+      } else {
+        // Fallback to basic orders
+        const res = await ordersAPI.getSupplierOrders();
+        const list: any[] = res.data?.orders ?? res.data ?? [];
+        setOrders(list);
+      }
     } catch {
-      setOrders([]);
+      try {
+        const res = await ordersAPI.getSupplierOrders();
+        const list: any[] = res.data?.orders ?? res.data ?? [];
+        setOrders(list);
+      } catch {
+        setOrders([]);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -70,13 +85,26 @@ export default function EarningsScreen({ navigation }: any) {
   };
 
   const {
-    totalEarningsPaise,
-    monthEarningsPaise,
-    weekEarningsPaise,
+    totalEarnings,
+    monthEarnings,
+    weekEarnings,
     completedCount,
-    pendingPayoutPaise,
+    pendingSettlement,
     completedOrders,
   } = useMemo(() => {
+    // If we have the dedicated earnings data, use it
+    if (earnings) {
+      return {
+        totalEarnings: earnings.totalEarnings || 0,
+        monthEarnings: earnings.monthEarnings || 0,
+        weekEarnings: earnings.weekEarnings || 0,
+        completedCount: earnings.completedCount || 0,
+        pendingSettlement: earnings.pendingSettlement || 0,
+        completedOrders: orders,
+      };
+    }
+
+    // Fallback: compute from raw orders
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const weekStart = new Date(now);
@@ -85,20 +113,20 @@ export default function EarningsScreen({ navigation }: any) {
     let total = 0;
     let month = 0;
     let week = 0;
-    let pendingPayout = 0;
+    let pending = 0;
     const completed: any[] = [];
 
     orders.forEach((o: any) => {
-      const amt = Number(o.totalAmount ?? o.totalPaise ?? o.total ?? 0);
-      const status = String(o.status || '').toLowerCase();
-      const paymentStatus = String(o.paymentStatus || '').toLowerCase();
+      const amt = Number(o.settlementAmount ?? o.totalAmount ?? 0);
+      const status = String(o.status || o.settlementStatus || '').toLowerCase();
+      const settlementStatus = String(o.settlementStatus || '').toLowerCase();
       const when = new Date(o.completedAt || o.updatedAt || o.createdAt || 0);
 
-      if (status === 'completed') {
+      if (status === 'completed' || status === 'settled') {
         total += amt;
         if (when >= monthStart) month += amt;
         if (when >= weekStart) week += amt;
-        if (paymentStatus !== 'paid') pendingPayout += amt;
+        if (settlementStatus !== 'settled') pending += amt;
         completed.push(o);
       }
     });
@@ -110,14 +138,14 @@ export default function EarningsScreen({ navigation }: any) {
     });
 
     return {
-      totalEarningsPaise: total,
-      monthEarningsPaise: month,
-      weekEarningsPaise: week,
+      totalEarnings: total,
+      monthEarnings: month,
+      weekEarnings: week,
       completedCount: completed.length,
-      pendingPayoutPaise: pendingPayout,
+      pendingSettlement: pending,
       completedOrders: completed,
     };
-  }, [orders]);
+  }, [orders, earnings]);
 
   return (
     <LightScreenBackground>
@@ -204,7 +232,7 @@ export default function EarningsScreen({ navigation }: any) {
                   letterSpacing: -0.8,
                 }}
               >
-                {formatINR(totalEarningsPaise)}
+                {formatINR(totalEarnings)}
               </Text>
               <Text
                 style={{
@@ -222,21 +250,21 @@ export default function EarningsScreen({ navigation }: any) {
               <PeriodTile
                 icon={TrendingUp}
                 label="This Month"
-                value={formatINR(monthEarningsPaise)}
+                value={formatINR(monthEarnings)}
                 tint="#0E7A3C"
               />
               <PeriodTile
                 icon={Calendar}
                 label="This Week"
-                value={formatINR(weekEarningsPaise)}
+                value={formatINR(weekEarnings)}
                 tint="#0369A1"
               />
             </View>
             <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xl }}>
               <PeriodTile
                 icon={Clock}
-                label="Pending Payout"
-                value={formatINR(pendingPayoutPaise)}
+                label="Pending Settlement"
+                value={formatINR(pendingSettlement)}
                 tint="#B8700B"
               />
               <PeriodTile
@@ -276,9 +304,12 @@ export default function EarningsScreen({ navigation }: any) {
             ) : (
               completedOrders.map((o: any, idx: number) => {
                 const id = o.id ?? o._id;
-                const amount = Number(o.totalAmount ?? o.total ?? 0);
-                const paid =
-                  String(o.paymentStatus || '').toLowerCase() === 'paid';
+                const orderAmount = Number(o.totalAmount ?? 0);
+                const settlementAmt = Number(o.settlementAmount ?? Math.round(orderAmount * 0.95));
+                const commission = Number(o.platformCommission ?? Math.round(orderAmount * 0.05));
+                const commissionPct = o.commissionPercent || 5;
+                const settlementStatus = String(o.settlementStatus || '').toLowerCase();
+                const isSettled = settlementStatus === 'settled';
                 const buyer = o.buyerId?.name || o.buyer?.name || 'Buyer';
                 return (
                   <SlideUpView key={id} delay={idx * 40}>
@@ -315,6 +346,14 @@ export default function EarningsScreen({ navigation }: any) {
                                 o.completedAt || o.updatedAt || o.createdAt || Date.now()
                               ).toLocaleDateString('en-IN')}
                             </Text>
+                            <Text
+                              style={[
+                                TYPE.caption,
+                                { color: LIGHT.textTertiary, marginTop: 2, fontSize: 10 },
+                              ]}
+                            >
+                              Order: ₹{orderAmount.toLocaleString('en-IN')} − {commissionPct}% fee = ₹{settlementAmt.toLocaleString('en-IN')}
+                            </Text>
                           </View>
                           <View style={{ alignItems: 'flex-end' }}>
                             <Text
@@ -323,26 +362,26 @@ export default function EarningsScreen({ navigation }: any) {
                                 { color: LIGHT.text, fontWeight: '700' },
                               ]}
                             >
-                              ₹{amount.toLocaleString('en-IN')}
+                              ₹{settlementAmt.toLocaleString('en-IN')}
                             </Text>
                             <View
                               style={{
                                 paddingHorizontal: 8,
                                 paddingVertical: 2,
                                 borderRadius: RADIUS.full,
-                                backgroundColor: paid ? '#22E08226' : '#FDE68A40',
+                                backgroundColor: isSettled ? '#22E08226' : '#FDE68A40',
                                 marginTop: 4,
                               }}
                             >
                               <Text
                                 style={{
-                                  color: paid ? '#0E7A3C' : '#B8700B',
+                                  color: isSettled ? '#0E7A3C' : '#B8700B',
                                   fontSize: 9,
                                   fontWeight: '700',
                                   letterSpacing: 0.4,
                                 }}
                               >
-                                {paid ? 'PAID' : 'PENDING'}
+                                {isSettled ? 'SETTLED' : 'PENDING'}
                               </Text>
                             </View>
                           </View>

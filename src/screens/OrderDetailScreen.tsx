@@ -301,8 +301,8 @@ export default function OrderDetailScreen({ route, navigation }: any) {
                 {order.supplier || order.supplierName || 'Supplier'}
               </Text>
               <GhostButton
-                title="Chat with Supplier"
-                onPress={() => navigation.navigate('Chat', { orderId: order.id, supplierName: order.supplier })}
+                title="Chat with Buyer"
+                onPress={() => navigation.navigate('Chat', { orderId: order.id, buyerName: order.buyerName || order.buyer || 'Buyer' })}
                 size="sm"
                 leftIcon={<MessageCircle size={16} color={NEON.glow} />}
               />

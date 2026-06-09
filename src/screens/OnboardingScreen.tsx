@@ -10,7 +10,6 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   StatusBar,
-  Dimensions,
   Animated,
   Easing,
 } from 'react-native';
@@ -31,8 +30,6 @@ import { SPACING } from '../theme/spacing';
 import { useAuthStore } from '../store';
 
 const LOGO = require('../../assets/logo.jpg');
-
-const { width } = Dimensions.get('window');
 
 // Step data
 const STEPS = [
@@ -80,6 +77,12 @@ export default function OnboardingScreen({ navigation }: any) {
   const [page, setPage] = useState(0);
   const { completeOnboarding } = useAuthStore();
 
+  // Live window dimensions — re-render whenever window resizes (web/tablet/rotation).
+  const { width, height } = useWindowDimensions();
+  const isCompact = height < 700;
+  const isNarrow = width < 380;
+  const slideMaxWidth = Math.min(width, 520); // cap content width on wide screens
+
   // Animated progress bar — smooth width interpolation across steps.
   const progressAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -90,6 +93,11 @@ export default function OnboardingScreen({ navigation }: any) {
       useNativeDriver: false,
     }).start();
   }, [page]);
+
+  // Re-snap to current page when width changes (web resize) so content stays aligned.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ x: page * width, animated: false });
+  }, [width]);
 
   const goTo = (idx: number) => {
     scrollRef.current?.scrollTo({ x: idx * width, animated: true });
@@ -178,36 +186,69 @@ export default function OnboardingScreen({ navigation }: any) {
         >
           {STEPS.map((s, idx) => {
             const IconC = s.Icon;
+            const ringOuter = isCompact ? 130 : isNarrow ? 140 : 160;
+            const ringMid = isCompact ? 104 : isNarrow ? 114 : 130;
+            const ringInner = isCompact ? 76 : isNarrow ? 84 : 96;
+            const iconSize = isCompact ? 36 : isNarrow ? 40 : 48;
             return (
-              <View key={s.key} style={{ width, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
-                {/* Icon container with glow */}
-                <View style={[styles.iconRingOuter, { borderColor: `${s.accent}22` }]}>
-                  <View style={[styles.iconRingMid, { backgroundColor: `${s.accent}15` }]}>
-                    <View style={[styles.iconCircle, { backgroundColor: `${s.accent}22` }]}>
-                      <IconC size={48} color={s.accent} strokeWidth={1.5} />
+              <ScrollView
+                key={s.key}
+                style={{ width }}
+                contentContainerStyle={{
+                  flexGrow: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: isNarrow ? 20 : 32,
+                  paddingVertical: 16,
+                }}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={{ width: '100%', maxWidth: slideMaxWidth, alignItems: 'center' }}>
+                  {/* Icon container with glow */}
+                  <View style={[styles.iconRingOuter, {
+                    borderColor: `${s.accent}22`,
+                    width: ringOuter, height: ringOuter, borderRadius: ringOuter / 2,
+                    marginBottom: isCompact ? 18 : 28,
+                  }]}>
+                    <View style={[styles.iconRingMid, {
+                      backgroundColor: `${s.accent}15`,
+                      width: ringMid, height: ringMid, borderRadius: ringMid / 2,
+                    }]}>
+                      <View style={[styles.iconCircle, {
+                        backgroundColor: `${s.accent}22`,
+                        width: ringInner, height: ringInner, borderRadius: ringInner / 2,
+                      }]}>
+                        <IconC size={iconSize} color={s.accent} strokeWidth={1.5} />
+                      </View>
                     </View>
                   </View>
-                </View>
 
-                {/* Step number tag */}
-                <View style={[styles.stepTag, { borderColor: `${s.accent}55`, backgroundColor: `${s.accent}14` }]}>
-                  <Text style={[styles.stepTagText, { color: s.accent }]}>STEP {s.number}</Text>
-                </View>
-
-                {/* Title */}
-                <Text style={styles.slideTitle}>{s.title}</Text>
-
-                {/* Body */}
-                <Text style={styles.slideBody}>{s.body}</Text>
-
-                {/* Feature bullets */}
-                {(BULLETS[s.key] || []).map((b, bi) => (
-                  <View key={bi} style={styles.bulletRow}>
-                    <View style={[styles.bulletDot, { backgroundColor: s.accent }]} />
-                    <Text style={styles.bulletText}>{b}</Text>
+                  {/* Step number tag */}
+                  <View style={[styles.stepTag, { borderColor: `${s.accent}55`, backgroundColor: `${s.accent}14` }]}>
+                    <Text style={[styles.stepTagText, { color: s.accent }]}>STEP {s.number}</Text>
                   </View>
-                ))}
-              </View>
+
+                  {/* Title */}
+                  <Text style={[styles.slideTitle, isNarrow && { fontSize: 22, lineHeight: 28 }]}>
+                    {s.title}
+                  </Text>
+
+                  {/* Body */}
+                  <Text style={[styles.slideBody, isNarrow && { fontSize: 13, lineHeight: 20 }]}>
+                    {s.body}
+                  </Text>
+
+                  {/* Feature bullets */}
+                  <View style={{ alignSelf: 'stretch', alignItems: 'flex-start', paddingHorizontal: 8 }}>
+                    {(BULLETS[s.key] || []).map((b, bi) => (
+                      <View key={bi} style={styles.bulletRow}>
+                        <View style={[styles.bulletDot, { backgroundColor: s.accent }]} />
+                        <Text style={styles.bulletText}>{b}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </ScrollView>
             );
           })}
         </ScrollView>

@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const API_URL = 'http://localhost:4001/api';
+const API_URL = 'https://server-1-xgr2.onrender.com/api';
 export const API_BASE = API_URL.replace(/\/api$/, '');
 
 /** Resolve a possibly-relative media URL (e.g. `/uploads/xxx.jpg`) to an absolute URL. */
@@ -153,10 +153,11 @@ export const ordersAPI = {
 };
 
 export const chatAPI = {
-  getChatByOrder: (orderId: string) => api.get(`/chat/order/${orderId}`),
+  getChatByOrder: (orderId: string) => api.post(`/chat/order/${orderId}`),
   getMessages: (chatId: string) => api.get(`/chat/${chatId}/messages`),
-  sendMessage: (chatId: string, data: any) => api.post(`/chat/${chatId}/messages`, data),
+  sendMessage: (chatId: string, data: any) => api.post(`/chat/${chatId}/message`, data),
   markAsRead: (chatId: string) => api.put(`/chat/${chatId}/read`),
+  getMyChats: () => api.get('/chat'),
 };
 
 export const notificationsAPI = {
@@ -206,6 +207,11 @@ export const requirementAPI = {
 export const otpAPI = {
   verifyStart: (bookingId: string, otp: string) => api.post('/otp/verify-start', { bookingId, otp }),
   verifyEnd: (bookingId: string, otp: string) => api.post('/otp/verify-end', { bookingId, otp }),
+};
+
+export const earningsAPI = {
+  /** Get earnings summary for the logged-in supplier */
+  getSummary: () => api.get('/orders/supplier/earnings'),
 };
 
 export const reviewAPI = {
