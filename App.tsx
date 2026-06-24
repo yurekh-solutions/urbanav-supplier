@@ -47,6 +47,7 @@ import { NEON, SURFACE, TEXT, GLASS } from './src/theme/colors';
 import { LAYOUT } from './src/theme/spacing';
 import { TabBounce } from './src/components/ui';
 import { useAuthStore } from './src/store';
+import { usePushNotifications } from './src/hooks/usePushNotifications';
 
 const BackHandler = Platform.OS === 'android' ? require('react-native').BackHandler : null;
 
@@ -181,6 +182,9 @@ function SupplierTabs() {
 
 export default function App() {
   const { isAuthenticated, isLoading, hasOnboarded, checkAuth, user } = useAuthStore();
+
+  // Register push notifications when authenticated
+  usePushNotifications();
 
   useEffect(() => {
     checkAuth();

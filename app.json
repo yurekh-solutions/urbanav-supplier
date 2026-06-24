@@ -27,8 +27,9 @@
         "backgroundColor": "#140821"
       },
       "package": "com.urbanav.supplier",
-      "versionCode": 1,
-      "permissions": []
+      "versionCode": 2,
+      "permissions": [],
+      "useNextNotificationsApi": true
     },
     "web": {
       "name": "UrbanAV Supplier",
@@ -43,6 +44,15 @@
         "projectId": "9a1fc121-6294-4533-8dee-04f912912914"
       }
     },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo.png",
+          "color": "#7B25F4"
+        }
+      ]
+    ],
     "owner": "urbanv"
   }
 }
