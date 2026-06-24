@@ -43,20 +43,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email: string, password: string) => {
     set({ isLoading: true });
     try {
-      // Call backend; demo credentials are handled server-side via .env.
       let user: any;
       let token: string;
       let justApproved = false;
-      try {
-        const res = await authAPI.login({ email, password });
-        const d: any = res.data || {};
-        user = d.user ?? d;
-        token = d.token ?? d.accessToken ?? 'mock-token';
-        justApproved = !!d.justApproved;
-      } catch (apiErr: any) {
-        // Offline fallback is removed — let the server return the error.
-        throw apiErr;
-      }
+      const res = await authAPI.login({ email, password });
+      const d: any = res.data || {};
+      user = d.user ?? d;
+      token = d.token ?? d.accessToken;
+      justApproved = !!d.justApproved;
 
       // Guard: only supplier accounts may sign in here.
       const userType = user?.userType || user?.role;
@@ -89,17 +83,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Force supplier role for this app (urbanav-supplier).
     const payload = { ...data, role: 'supplier', userType: 'supplier' };
     try {
-      let user: any;
-      let token: string;
-      try {
-        const res = await authAPI.register(payload);
-        const d: any = res.data || {};
-        user = d.user ?? d;
-        token = d.token ?? d.accessToken ?? 'mock-token';
-      } catch (apiErr: any) {
-        // API failed — surface the real error to LoginScreen
-        throw apiErr;
-      }
+      const res = await authAPI.register(payload);
+      const d: any = res.data || {};
+      const user = d.user ?? d;
+      const token = d.token ?? d.accessToken;
 
       // If the server returned a pending status, don't auto-login.
       // Supplier must wait for admin approval before logging in.

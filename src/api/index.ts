@@ -23,7 +23,7 @@ const api = axios.create({
 api.interceptors.request.use(async (config) => {
   try {
     const token = await AsyncStorage.getItem('@urbanav_token');
-    if (token && token !== 'mock-token') {
+    if (token) {
       config.headers = config.headers ?? {};
       (config.headers as any).Authorization = `Bearer ${token}`;
     }

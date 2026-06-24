@@ -84,18 +84,26 @@ export default function ChatScreen({ route, navigation }: any) {
     
     try {
       setLoading(true);
-      
-      // Get or create chat for this order
-      if (!chatId) {
+
+      // Resolve the chatId — use local var so we don't depend on async setState
+      let resolvedChatId = chatId || initialChatId;
+
+      if (!resolvedChatId) {
         const chatRes = await chatAPI.getChatByOrder(orderId);
-        const newChatId = chatRes.data?.chat?._id || chatRes.data?.chat?.id;
-        if (newChatId) {
-          setChatId(newChatId);
+        resolvedChatId = chatRes.data?.chat?._id || chatRes.data?.chat?.id || null;
+        if (resolvedChatId) {
+          setChatId(resolvedChatId);
         }
       }
+
+      if (!resolvedChatId) {
+        setMessages([]);
+        setLoading(false);
+        return;
+      }
       
-      // Fetch messages
-      const messagesRes = await chatAPI.getMessages(chatId || initialChatId);
+      // Fetch messages using the resolved chatId
+      const messagesRes = await chatAPI.getMessages(resolvedChatId);
       const msgs = messagesRes.data?.messages || messagesRes.data || [];
       
       // Transform messages to our format
@@ -110,6 +118,11 @@ export default function ChatScreen({ route, navigation }: any) {
       }));
       
       setMessages(formatted);
+
+      // Mark messages as read
+      try {
+        await chatAPI.markAsRead(resolvedChatId);
+      } catch {}
     } catch (error: any) {
       console.error('Failed to load chat:', error);
       setMessages([]);
