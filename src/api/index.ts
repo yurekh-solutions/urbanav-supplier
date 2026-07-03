@@ -2,7 +2,11 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const API_URL = 'https://server-1-xgr2.onrender.com/api';
+// API Configuration: Supports both local and cloud backends
+// Set EXPO_PUBLIC_API_URL in .env to override (e.g., http://localhost:4000/api)
+const LOCAL_API_URL = 'http://localhost:4000/api';
+const CLOUD_API_URL = 'https://server-1-xgr2.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || LOCAL_API_URL;
 export const API_BASE = API_URL.replace(/\/api$/, '');
 
 /** Resolve a possibly-relative media URL (e.g. `/uploads/xxx.jpg`) to an absolute URL. */

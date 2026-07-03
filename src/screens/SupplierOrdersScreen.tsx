@@ -56,15 +56,14 @@ const FILTERS = [
   { label: 'Cancelled', value: 'cancelled' },
 ];
 
-// Map a raw backend status into a UI bucket.
+// Map a raw backend BOP status into a UI bucket.
 function toBucket(order: any): 'upcoming' | 'ongoing' | 'completed' | 'cancelled' {
   const s = String(order?.status || '').toLowerCase();
-  if (s === 'completed') return 'completed';
+  if (['completed', 'final_paid', 'payout_released'].includes(s)) return 'completed';
   if (s === 'cancelled') return 'cancelled';
+  if (['rental_started', 'rental_completed'].includes(s)) return 'ongoing';
   // OTP-derived: if start was verified but end wasn't, treat as ongoing
-  // regardless of the stored status enum.
   if (order?.otpStartVerified && !order?.otpEndVerified) return 'ongoing';
-  if (s === 'preparing' || s === 'delivered' || s === 'in-progress' || s === 'in_progress') return 'ongoing';
   return 'upcoming';
 }
 

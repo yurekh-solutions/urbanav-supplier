@@ -6,7 +6,9 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_URL = 'https://server-1-xgr2.onrender.com/api';
+const LOCAL_API_URL = 'http://localhost:4000/api';
+const CLOUD_API_URL = 'https://server-1-xgr2.onrender.com/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || LOCAL_API_URL;
 
 // Configure how notifications appear when the app is in the foreground
 Notifications.setNotificationHandler({
