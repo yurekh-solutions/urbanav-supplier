@@ -1,5 +1,1 @@
-Fix supplier app API configuration
-
-- Use EXPO_PUBLIC_API_URL env var with localhost fallback
-- Update push notifications hook to use env-based API URL
-- Fix supplier orders screen display
+Add EXPO_PUBLIC_API_URL to EAS preview profile  

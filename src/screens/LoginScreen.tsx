@@ -31,6 +31,7 @@ import {
 } from 'lucide-react-native';
 import { GRADIENT, GLASS, NEON, TEXT, SEMANTIC, SURFACE } from '../theme/colors';
 import { useAuthStore } from '../store';
+import { useToast } from '../components/ToastContext';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const IS_SMALL = SCREEN_W < 380;
@@ -119,8 +120,8 @@ function LoginField({
 function LoginContent({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const { showToast } = useToast();
   const [rejectionModal, setRejectionModal] = useState<{
     visible: boolean;
     reason: string;
@@ -138,8 +139,7 @@ function LoginContent({ navigation }: any) {
   const pulseAnim = useState(new Animated.Value(0))[0];
 
   const handleLogin = async () => {
-    setError('');
-    if (!email || !password) { setError('Please enter your email and password.'); return; }
+    if (!email || !password) { showToast({ message: 'Please enter your email and password.', type: 'error' }); return; }
     try {
       const result: any = await login(email.trim().toLowerCase(), password);
       if (result?.justApproved) {
@@ -150,13 +150,22 @@ function LoginContent({ navigation }: any) {
       }
     } catch (err: any) {
       const errorCode = err?.response?.data?.code;
-      const errorMsg = err?.response?.data?.message || 'Invalid email or password. Please try again.';
+      const status = err?.response?.status;
+      const rawMsg = err?.response?.data?.message || err?.message || '';
 
-      if (errorCode === 'ACCOUNT_PENDING') {
+      if (!err?.response) {
+        // Timeout or network error — no response from server
+        const isTimeout =
+          err?.code === 'ECONNABORTED' ||
+          /timeout/i.test(err?.message || '');
+        showToast({ message: isTimeout
+          ? 'The server is taking too long to respond (it may be starting up). Please wait ~30 seconds and try again.'
+          : 'Unable to connect to the server. Please check your internet connection and try again.', type: 'error' });
+      } else if (errorCode === 'ACCOUNT_PENDING') {
         setPendingModal({
           visible: true,
           message: err?.response?.data?.message ||
-            'Your supplier account is pending admin approval. Our team will verify your KYC details within 24–48 hours.',
+            'Your supplier account is pending admin approval. Our team will verify your KYC details within 24\u201348 hours.',
         });
       } else if (errorCode === 'ACCOUNT_REJECTED') {
         setRejectionModal({
@@ -168,14 +177,24 @@ function LoginContent({ navigation }: any) {
           visible: true,
           message: err?.response?.data?.message || 'Your account has been suspended.',
         });
+      } else if (status === 401 || status === 403) {
+        // Wrong credentials — give a clear, friendly message
+        showToast({ message: 'The email or password you entered is incorrect. Please try again, or tap "Forgot Password" to reset it.', type: 'error' });
+      } else if (status === 404) {
+        showToast({ message: 'No supplier account found with this email. Please register first or check the email address.', type: 'error' });
+      } else if (status >= 500) {
+        showToast({ message: 'Our servers are temporarily unavailable. Please try again in a few minutes.', type: 'error' });
       } else {
-        setError(errorMsg);
+        // Fallback: show a safe, human-readable message
+        showToast({ message: rawMsg && rawMsg.length < 150
+          ? rawMsg
+          : 'Something went wrong. Please try again later.', type: 'error' });
       }
     }
   };
 
   return (
-    <LinearGradient colors={GRADIENT.appBg as string[]} style={{ flex: 1 }}>
+    <LinearGradient colors={GRADIENT.appBg} style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" />
       <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView
@@ -223,12 +242,6 @@ function LoginContent({ navigation }: any) {
                 secureTextEntry
               />
 
-              {error ? (
-                <View style={styles.errorBox}>
-                  <Text style={styles.errorText}>{error}</Text>
-                </View>
-              ) : null}
-
               <TouchableOpacity
                 onPress={handleLogin}
                 disabled={isLoading}
@@ -236,7 +249,7 @@ function LoginContent({ navigation }: any) {
                 style={styles.primaryBtn}
               >
                 <LinearGradient
-                  colors={GRADIENT.brand as string[]}
+                  colors={GRADIENT.brand}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={StyleSheet.absoluteFill}
@@ -414,17 +427,24 @@ function LoginContent({ navigation }: any) {
 function GlassInput({
   label, placeholder, value, onChangeText,
   secureTextEntry, keyboardType, autoCapitalize, rightIcon,
+  error,
 }: {
   label: string; placeholder: string; value: string;
   onChangeText: (t: string) => void;
   secureTextEntry?: boolean; keyboardType?: any; autoCapitalize?: any;
   rightIcon?: React.ReactNode;
+  error?: string;
 }) {
   const [focused, setFocused] = useState(false);
+  const hasError = !!error;
   return (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={[styles.label, focused && styles.labelFocused]}>{label.toUpperCase()}</Text>
-      <View style={[styles.inputWrap, focused && styles.inputWrapFocused]}>
+    <View style={{ marginBottom: hasError ? 4 : 16 }}>
+      <Text style={[styles.label, focused && !hasError && styles.labelFocused, hasError && { color: '#FF5B6E' }]}>{label.toUpperCase()}</Text>
+      <View style={[
+        styles.inputWrap,
+        focused && !hasError && styles.inputWrapFocused,
+        hasError && { borderColor: 'rgba(255, 91, 110, 0.6)', backgroundColor: 'rgba(255, 91, 110, 0.06)' },
+      ]}>
         <TextInput
           style={styles.inputField}
           placeholder={placeholder}
@@ -439,6 +459,7 @@ function GlassInput({
         />
         {rightIcon && rightIcon}
       </View>
+      {hasError ? <Text style={{ color: '#FF5B6E', fontSize: 11, fontWeight: '600', marginTop: 4, marginLeft: 4 }}>{error}</Text> : null}
     </View>
   );
 }
@@ -454,19 +475,37 @@ function RegisterContent({ navigation }: any) {
   const [panNumber, setPanNumber] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
+  const [pincode, setPincode] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [error, setError] = useState('');
+  const { showToast } = useToast();
   const { register, isLoading } = useAuthStore();
 
+  // ── Live validators — always active ──
+  const errors: Record<string, string> = {};
+
+  if (!businessName.trim()) errors.businessName = 'Business name is required';
+  if (!name.trim()) errors.name = 'Your name is required';
+  if (!email.trim()) errors.email = 'Email is required';
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = 'Enter a valid email address';
+  if (!phone.trim()) errors.phone = 'Phone number is required';
+  else if (!/^[+]?\d{10,13}$/.test(phone.replace(/[\s-]/g, ''))) errors.phone = 'Enter a valid phone number';
+  if (!gstNumber.trim()) errors.gstNumber = 'GST number is required';
+  else if (gstNumber.trim().length !== 15) errors.gstNumber = `GST must be 15 chars (${gstNumber.trim().length}/15)`;
+  if (!panNumber.trim()) errors.panNumber = 'PAN number is required';
+  else if (panNumber.trim().length !== 10) errors.panNumber = `PAN must be 10 chars (${panNumber.trim().length}/10)`;
+  else if (!/^[A-Z]{5}\d{4}[A-Z]$/.test(panNumber.trim())) errors.panNumber = 'Invalid PAN format (e.g. ABCDE1234F)';
+  if (!city.trim()) errors.city = 'City is required';
+  if (!state.trim()) errors.state = 'State is required';
+  if (!pincode.trim()) errors.pincode = 'Pincode is required';
+  else if (pincode.trim().length !== 6) errors.pincode = `Pincode must be 6 digits (${pincode.trim().length}/6)`;
+  if (!password) errors.password = 'Password is required';
+  else if (password.length < 6) errors.password = `Min 6 characters (${password.length}/6)`;
+
   const handleRegister = async () => {
-    setError('');
-    if (!name || !email || !phone || !password || !businessName) { setError('Please fill in all required fields.'); return; }
-    if (!gstNumber) { setError('Please enter your GST Number.'); return; }
-    if (!panNumber) { setError('Please enter your PAN Number.'); return; }
-    if (!city || !state) { setError('Please enter your service area.'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (gstNumber.length !== 15) { setError('GST Number must be 15 characters.'); return; }
-    if (panNumber.length !== 10) { setError('PAN Number must be 10 characters.'); return; }
+    if (Object.keys(errors).length > 0) {
+      showToast({ message: 'Please fix the highlighted errors.', type: 'error' });
+      return;
+    }
     try {
       await register({
         name: name.trim(),
@@ -478,15 +517,29 @@ function RegisterContent({ navigation }: any) {
         userType: 'supplier',
         gstNumber: gstNumber.trim().toUpperCase(),
         panNumber: panNumber.trim().toUpperCase(),
-        serviceArea: { city: city.trim(), state: state.trim() },
+        serviceArea: { city: city.trim(), state: state.trim(), pincode: pincode.trim() },
+      });
+      // Registration success → go straight to locked PendingApprovalScreen
+      navigation.replace('PendingApproval', {
+        email: email.trim().toLowerCase(),
+        kycUploaded: false,
+        accountStatus: 'pending',
+        kycStatus: 'pending',
       });
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || '';
-      if (msg.includes('pending') || msg.includes('approval')) {
-        setError('Registration complete. Your account is pending admin approval.');
-        setTimeout(() => navigation.navigate('Login'), 2500);
+      const isTimeout = e?.code === 'ECONNABORTED' || /timeout/i.test(msg);
+      if (isTimeout || (!e?.response && /network/i.test(msg))) {
+        showToast({ message: 'The server is taking too long to respond. Please wait ~30 seconds and try again.', type: 'error' });
+      } else if (msg.includes('pending') || msg.includes('approval')) {
+        navigation.replace('PendingApproval', {
+          email: email.trim().toLowerCase(),
+          kycUploaded: false,
+          accountStatus: 'pending',
+          kycStatus: 'pending',
+        });
       } else {
-        setError(msg || 'Registration failed. Please try again.');
+        showToast({ message: msg || 'Registration failed. Please try again.', type: 'error' });
       }
     }
   };
@@ -512,32 +565,40 @@ function RegisterContent({ navigation }: any) {
       <Text style={[styles.headingBold, styles.headingLight, { marginBottom: 24 }]}>AV inventory</Text>
 
       <View style={styles.glassCard}>
-        <GlassInput label="Business Name *" placeholder="Your rental business name" value={businessName} onChangeText={setBusinessName} autoCapitalize="words" />
-        <GlassInput label="Your Name *" placeholder="Contact person name" value={name} onChangeText={setName} autoCapitalize="words" />
-        <GlassInput label="Email *" placeholder="you@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <GlassInput label="Phone *" placeholder="+91 9876543210" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+        <GlassInput label="Business Name *" placeholder="Your rental business name" value={businessName} onChangeText={setBusinessName} autoCapitalize="words" error={errors.businessName} />
+        <GlassInput label="Your Name *" placeholder="Contact person name" value={name} onChangeText={setName} autoCapitalize="words" error={errors.name} />
+        <GlassInput label="Email *" placeholder="you@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" error={errors.email} />
+        <GlassInput label="Phone *" placeholder="9876543210" value={phone} onChangeText={(t: string) => setPhone(t.replace(/[^0-9+\-\s]/g, ''))} keyboardType="phone-pad" error={errors.phone} />
         <View style={styles.row2}>
           <View style={{ flex: 1 }}>
-            <GlassInput label="GST Number *" placeholder="15-digit GST" value={gstNumber} onChangeText={t => setGstNumber(t.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())} autoCapitalize="characters" />
+            <GlassInput label="GST Number *" placeholder="15-digit GST" value={gstNumber} onChangeText={t => setGstNumber(t.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())} autoCapitalize="characters" error={errors.gstNumber} />
           </View>
           <View style={{ flex: 1 }}>
-            <GlassInput label="PAN Number *" placeholder="10-char PAN" value={panNumber} onChangeText={t => setPanNumber(t.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())} autoCapitalize="characters" />
+            <GlassInput label="PAN Number *" placeholder="10-char PAN" value={panNumber} onChangeText={t => setPanNumber(t.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())} autoCapitalize="characters" error={errors.panNumber} />
           </View>
         </View>
         <View style={styles.row2}>
           <View style={{ flex: 1 }}>
-            <GlassInput label="City *" placeholder="e.g. Mumbai" value={city} onChangeText={setCity} autoCapitalize="words" />
+            <GlassInput label="City *" placeholder="e.g. Mumbai" value={city} onChangeText={(t: string) => {
+              setCity(t);
+              if (t.trim().toLowerCase() === 'mumbai') {
+                setState('Maharashtra');
+                setPincode('400001');
+              }
+            }} autoCapitalize="words" error={errors.city} />
           </View>
           <View style={{ flex: 1 }}>
-            <GlassInput label="State *" placeholder="e.g. Maharashtra" value={state} onChangeText={setState} autoCapitalize="words" />
+            <GlassInput label="State *" placeholder="e.g. Maharashtra" value={state} onChangeText={setState} autoCapitalize="words" error={errors.state} />
           </View>
         </View>
+        <GlassInput label="Pincode *" placeholder="e.g. 400001" value={pincode} onChangeText={(t: string) => setPincode(t.replace(/[^0-9]/g, '').slice(0, 6))} keyboardType="number-pad" autoCapitalize="none" error={errors.pincode} />
         <GlassInput
-          label="Password"
+          label="Password *"
           placeholder="Min 6 characters"
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPw}
+          error={errors.password}
           rightIcon={
             <View style={styles.eyeWrap}>
               <TouchableOpacity onPress={() => setShowPw(!showPw)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -548,10 +609,6 @@ function RegisterContent({ navigation }: any) {
             </View>
           }
         />
-
-        {error ? (
-          <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>
-        ) : null}
 
         <TouchableOpacity onPress={handleRegister} disabled={isLoading} activeOpacity={0.8} style={[styles.glassBtn, isLoading && styles.glassBtnLoading]}>
           <Text style={styles.glassBtnText}>{isLoading ? 'CREATING ACCOUNT...' : 'REGISTER AS SUPPLIER'}</Text>
@@ -572,9 +629,9 @@ function RegisterContent({ navigation }: any) {
 }
 
 // ── Shared Layout ───────────────────────────────────────────────────────
-function AuthLayout({ children }: { children?: React.ReactNode }) {
+function AuthLayout({ children, scrollStyle }: { children?: React.ReactNode; scrollStyle?: any }) {
   return (
-    <LinearGradient colors={GRADIENT.appBg as string[]} style={{ flex: 1 }}>
+    <LinearGradient colors={GRADIENT.appBg} style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" />
       <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView
@@ -582,9 +639,10 @@ function AuthLayout({ children }: { children?: React.ReactNode }) {
           style={{ flex: 1 }}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, scrollStyle]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            bounces={false}
           >
             {children}
           </ScrollView>
@@ -604,7 +662,7 @@ export default function LoginScreen({ navigation }: any) {
 
 export function RegisterScreen({ navigation }: any) {
   return (
-    <AuthLayout>
+    <AuthLayout scrollStyle={{ flexGrow: 1 }}>
       <RegisterContent navigation={navigation} />
     </AuthLayout>
   );
@@ -613,7 +671,6 @@ export function RegisterScreen({ navigation }: any) {
 // ── Shared Styles ───────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   scrollContent: {
-    flexGrow: 1,
     paddingHorizontal: IS_SMALL ? 20 : 24,
     paddingTop: 40,
     paddingBottom: 40,
@@ -697,11 +754,14 @@ const styles = StyleSheet.create({
     borderColor: `${SEMANTIC.error}35`,
     padding: 12,
     marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   errorText: {
-    fontSize: 12.5,
+    fontSize: 13,
     color: SEMANTIC.error,
-    textAlign: 'center',
+    flex: 1,
+    lineHeight: 18,
     fontWeight: '600',
   },
 

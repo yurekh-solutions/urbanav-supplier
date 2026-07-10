@@ -16,74 +16,68 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Package,
+  UserPlus,
+  FileText,
   ShieldCheck,
-  TrendingUp,
+  Store,
   ArrowRight,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Star,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react-native';
-import { GRADIENT, GLASS, NEON, TEXT } from '../theme/colors';
-import { SPACING } from '../theme/spacing';
+import { GRADIENT, GLASS, NEON } from '../theme/colors';
 import { useAuthStore } from '../store';
 
 const LOGO = require('../../assets/logo.jpg');
 
-// Step data
 const STEPS = [
   {
-    key: 'list',
+    key: 'register',
     number: '01',
-    title: 'List Your AV Inventory',
-    body: 'Add projectors, speakers, LED walls, lighting and more. Set your own prices and availability for every item.',
-    Icon: Package,
+    title: 'Create Your Account',
+    body: 'Fill in your business details, contact info, and service area to get started as a supplier on UrbanAV.',
+    Icon: UserPlus,
     accent: '#7B25F4',
-    gradientFrom: 'rgba(123, 37, 244, 0.12)',
-    gradientTo: 'rgba(123, 37, 244, 0.04)',
+    bullets: ['Business name & contact', 'GST & PAN details', 'Service area & pincode'],
   },
   {
-    key: 'verify',
+    key: 'documents',
     number: '02',
-    title: 'Get Verified by Admin',
-    body: 'Submit your GST, PAN and business details. Admin reviews and approves your account before you can start.',
-    Icon: ShieldCheck,
+    title: 'Upload Documents',
+    body: 'Submit your KYC documents for verification. Our team reviews each application carefully.',
+    Icon: FileText,
     accent: '#E14D8A',
-    gradientFrom: 'rgba(225, 77, 138, 0.12)',
-    gradientTo: 'rgba(225, 77, 138, 0.04)',
+    bullets: ['PAN Card (Required)', 'Bank Proof (Required)', 'GST / Business Licence'],
   },
   {
-    key: 'earn',
+    key: 'approval',
     number: '03',
-    title: 'Accept Bookings & Earn',
-    body: 'Receive buyer inquiries, quote your best price, and manage OTP-secured orders from a single dashboard.',
-    Icon: TrendingUp,
+    title: 'Admin Review & Approval',
+    body: 'Our admin team verifies your documents and business details. Approval typically takes 24\u201348 hours.',
+    Icon: ShieldCheck,
+    accent: '#E666FF',
+    bullets: ['Document verification', 'Business detail check', 'Email notification on approval'],
+  },
+  {
+    key: 'sell',
+    number: '04',
+    title: 'Start Listing & Earning',
+    body: 'Once approved, list your AV equipment, receive buyer inquiries, and manage orders from your dashboard.',
+    Icon: Store,
     accent: '#22E082',
-    gradientFrom: 'rgba(34, 224, 130, 0.10)',
-    gradientTo: 'rgba(34, 224, 130, 0.03)',
+    bullets: ['List unlimited equipment', 'Receive buyer inquiries', 'Manage orders & earnings'],
   },
 ];
-
-// Feature bullets per step
-const BULLETS: Record<string, string[]> = {
-  list: ['Add unlimited equipment', 'Set daily rental price', 'Upload photos & specs'],
-  verify: ['GST & PAN verification', 'Business address', 'Bank account for payouts'],
-  earn: ['Real-time buyer inquiries', 'Order management with OTP', 'Earnings dashboard'],
-};
 
 export default function OnboardingScreen({ navigation }: any) {
   const scrollRef = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
   const { completeOnboarding } = useAuthStore();
 
-  // Live window dimensions — re-render whenever window resizes (web/tablet/rotation).
   const { width, height } = useWindowDimensions();
   const isCompact = height < 700;
   const isNarrow = width < 380;
-  const slideMaxWidth = Math.min(width, 520); // cap content width on wide screens
+  const slideMaxWidth = Math.min(width, 480);
 
-  // Animated progress bar — smooth width interpolation across steps.
   const progressAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(progressAnim, {
@@ -94,7 +88,6 @@ export default function OnboardingScreen({ navigation }: any) {
     }).start();
   }, [page]);
 
-  // Re-snap to current page when width changes (web resize) so content stays aligned.
   useEffect(() => {
     scrollRef.current?.scrollTo({ x: page * width, animated: false });
   }, [width]);
@@ -115,7 +108,7 @@ export default function OnboardingScreen({ navigation }: any) {
       goTo(page + 1);
     } else {
       await completeOnboarding();
-      navigation.replace('Register');
+      navigation.replace('Login');
     }
   };
 
@@ -125,14 +118,13 @@ export default function OnboardingScreen({ navigation }: any) {
   };
 
   const step = STEPS[page];
-  const IconComp = step.Icon;
 
   return (
-    <LinearGradient colors={GRADIENT.appBg as string[]} style={{ flex: 1 }}>
+    <LinearGradient colors={GRADIENT.appBg} style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" />
       <SafeAreaView style={{ flex: 1 }}>
 
-        {/* ── Header ─────────────────────────────── */}
+        {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoRow}>
             <View style={styles.logoCircle}>
@@ -148,33 +140,35 @@ export default function OnboardingScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* ── Step counter + animated progress bar ── */}
-        <View style={styles.stepCounter}>
-          <Text style={styles.stepNumber}>STEP {step.number}</Text>
-          <Text style={styles.stepOf}>{page + 1} of {STEPS.length}</Text>
-        </View>
-        <View style={styles.progressTrack}>
-          <Animated.View
-            style={[
-              styles.progressFill,
-              {
-                width: progressAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={[NEON.violet, NEON.glow]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
+        {/* Progress */}
+        <View style={styles.progressSection}>
+          <View style={styles.stepCounter}>
+            <Text style={styles.stepNumber}>STEP {step.number}</Text>
+            <Text style={styles.stepOf}>{page + 1} of {STEPS.length}</Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <Animated.View
+              style={[
+                styles.progressFill,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            >
+              <LinearGradient
+                colors={[NEON.violet, NEON.glow]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+          </View>
         </View>
 
-        {/* ── Horizontal scroll ─────────────────── */}
+        {/* Horizontal scroll */}
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -184,12 +178,11 @@ export default function OnboardingScreen({ navigation }: any) {
           scrollEventThrottle={16}
           style={{ flex: 1 }}
         >
-          {STEPS.map((s, idx) => {
+          {STEPS.map((s) => {
             const IconC = s.Icon;
-            const ringOuter = isCompact ? 130 : isNarrow ? 140 : 160;
-            const ringMid = isCompact ? 104 : isNarrow ? 114 : 130;
-            const ringInner = isCompact ? 76 : isNarrow ? 84 : 96;
-            const iconSize = isCompact ? 36 : isNarrow ? 40 : 48;
+            const ringSize = isCompact ? 110 : isNarrow ? 120 : 140;
+            const iconSize = isCompact ? 44 : isNarrow ? 48 : 56;
+
             return (
               <ScrollView
                 key={s.key}
@@ -198,32 +191,38 @@ export default function OnboardingScreen({ navigation }: any) {
                   flexGrow: 1,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  paddingHorizontal: isNarrow ? 20 : 32,
-                  paddingVertical: 16,
+                  paddingHorizontal: isNarrow ? 20 : 28,
+                  paddingVertical: 12,
                 }}
                 showsVerticalScrollIndicator={false}
               >
                 <View style={{ width: '100%', maxWidth: slideMaxWidth, alignItems: 'center' }}>
-                  {/* Icon container with glow */}
-                  <View style={[styles.iconRingOuter, {
-                    borderColor: `${s.accent}22`,
-                    width: ringOuter, height: ringOuter, borderRadius: ringOuter / 2,
-                    marginBottom: isCompact ? 18 : 28,
-                  }]}>
-                    <View style={[styles.iconRingMid, {
-                      backgroundColor: `${s.accent}15`,
-                      width: ringMid, height: ringMid, borderRadius: ringMid / 2,
-                    }]}>
-                      <View style={[styles.iconCircle, {
-                        backgroundColor: `${s.accent}22`,
-                        width: ringInner, height: ringInner, borderRadius: ringInner / 2,
-                      }]}>
-                        <IconC size={iconSize} color={s.accent} strokeWidth={1.5} />
-                      </View>
+
+                  {/* Icon with glow ring */}
+                  <View style={{
+                    width: ringSize,
+                    height: ringSize,
+                    borderRadius: ringSize / 2,
+                    backgroundColor: `${s.accent}12`,
+                    borderWidth: 1.5,
+                    borderColor: `${s.accent}30`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 20,
+                  }}>
+                    <View style={{
+                      width: ringSize * 0.72,
+                      height: ringSize * 0.72,
+                      borderRadius: (ringSize * 0.72) / 2,
+                      backgroundColor: `${s.accent}18`,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <IconC size={iconSize} color={s.accent} strokeWidth={1.5} />
                     </View>
                   </View>
 
-                  {/* Step number tag */}
+                  {/* Step tag */}
                   <View style={[styles.stepTag, { borderColor: `${s.accent}55`, backgroundColor: `${s.accent}14` }]}>
                     <Text style={[styles.stepTagText, { color: s.accent }]}>STEP {s.number}</Text>
                   </View>
@@ -238,24 +237,38 @@ export default function OnboardingScreen({ navigation }: any) {
                     {s.body}
                   </Text>
 
-                  {/* Feature bullets */}
-                  <View style={{ alignSelf: 'stretch', alignItems: 'flex-start', paddingHorizontal: 8 }}>
-                    {(BULLETS[s.key] || []).map((b, bi) => (
+                  {/* Feature bullets — card style */}
+                  <View style={styles.bulletCard}>
+                    {(s.bullets || []).map((b, bi) => (
                       <View key={bi} style={styles.bulletRow}>
-                        <View style={[styles.bulletDot, { backgroundColor: s.accent }]} />
+                        <CheckCircle2 size={14} color={s.accent} strokeWidth={2.2} />
                         <Text style={styles.bulletText}>{b}</Text>
                       </View>
                     ))}
                   </View>
+
+                  {/* Admin approval notice — only on approval step */}
+                  {s.key === 'approval' ? (
+                    <View style={styles.importantNote}>
+                      <View style={styles.noteIconWrap}>
+                        <AlertCircle size={18} color="#60A5FA" strokeWidth={2} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.noteTitle}>Important Note</Text>
+                        <Text style={styles.noteText}>
+                          You can only sign in after your supplier application is approved by admin. We'll notify you via email once verified.
+                        </Text>
+                      </View>
+                    </View>
+                  ) : null}
                 </View>
               </ScrollView>
             );
           })}
         </ScrollView>
 
-        {/* ── Bottom CTA ────────────────────────── */}
+        {/* Bottom CTA */}
         <View style={styles.bottom}>
-          {/* Dot indicators */}
           <View style={styles.dotRow}>
             {STEPS.map((_, i) => (
               <TouchableOpacity key={i} onPress={() => goTo(i)} activeOpacity={0.7}>
@@ -271,20 +284,13 @@ export default function OnboardingScreen({ navigation }: any) {
             ))}
           </View>
 
-          {/* Primary button */}
           <TouchableOpacity
             onPress={handleNext}
             activeOpacity={0.8}
             style={styles.ctaBtn}
           >
             <LinearGradient
-              colors={GRADIENT.brand as string[]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <LinearGradient
-              colors={GRADIENT.glassShine as string[]}
+              colors={GRADIENT.brand}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
@@ -297,9 +303,8 @@ export default function OnboardingScreen({ navigation }: any) {
             </View>
           </TouchableOpacity>
 
-          {/* Already have account */}
           {page === STEPS.length - 1 && (
-            <TouchableOpacity onPress={handleSkip} style={{ marginTop: 16, alignItems: 'center' }}>
+            <TouchableOpacity onPress={handleSkip} style={{ marginTop: 14, alignItems: 'center' }}>
               <Text style={styles.alreadyText}>I already have an account</Text>
             </TouchableOpacity>
           )}
@@ -347,13 +352,15 @@ const styles = StyleSheet.create({
     color: 'rgba(247, 217, 255, 0.45)',
     letterSpacing: 0.5,
   },
+  progressSection: {
+    paddingHorizontal: 24,
+    paddingTop: 14,
+  },
   stepCounter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 18,
     paddingBottom: 10,
-    paddingHorizontal: 24,
   },
   stepNumber: {
     fontSize: 11,
@@ -361,51 +368,19 @@ const styles = StyleSheet.create({
     color: NEON.glow,
     letterSpacing: 2,
   },
-  progressDots: { flexDirection: 'row', gap: 5 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  dotActive: { backgroundColor: NEON.glow, width: 20 },
-  dotDone: { backgroundColor: 'rgba(230, 102, 255, 0.5)' },
-  dotIdle: { backgroundColor: 'rgba(247, 217, 255, 0.15)' },
   stepOf: {
     fontSize: 11,
     color: 'rgba(247, 217, 255, 0.35)',
     fontWeight: '600',
     letterSpacing: 1,
   },
-  iconRingOuter: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 28,
-  },
-  iconRingMid: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: GLASS.tier1Border,
-  },
   progressTrack: {
-    marginHorizontal: 24,
-    height: 6,
+    height: 5,
     borderRadius: 3,
     backgroundColor: 'rgba(247, 217, 255, 0.08)',
     borderWidth: 1,
     borderColor: GLASS.tier2Border,
     overflow: 'hidden',
-    marginBottom: 8,
   },
   progressFill: {
     height: '100%',
@@ -432,7 +407,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: -0.5,
     lineHeight: 34,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   slideBody: {
     fontSize: 14,
@@ -440,7 +415,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 10,
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  bulletCard: {
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(247, 217, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(247, 217, 255, 0.12)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   bulletRow: {
     flexDirection: 'row',
@@ -448,21 +433,47 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 8,
   },
-  bulletDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
   bulletText: {
     fontSize: 13,
-    color: 'rgba(247, 217, 255, 0.5)',
+    color: 'rgba(247, 217, 255, 0.65)',
     fontWeight: '500',
+  },
+  importantNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: 'rgba(96, 165, 250, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(96, 165, 250, 0.25)',
+    borderRadius: 14,
+    padding: 14,
+    alignSelf: 'stretch',
+  },
+  noteIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(96, 165, 250, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  noteTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#93C5FD',
+    marginBottom: 3,
+  },
+  noteText: {
+    fontSize: 12,
+    color: 'rgba(147, 197, 253, 0.8)',
+    lineHeight: 18,
   },
   bottom: {
     paddingHorizontal: 24,
     paddingBottom: 24,
     alignItems: 'center',
-    gap: 20,
+    gap: 18,
   },
   dotRow: {
     flexDirection: 'row',
@@ -476,8 +487,6 @@ const styles = StyleSheet.create({
   ctaBtn: {
     width: '100%',
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(247, 217, 255, 0.35)',
     overflow: 'hidden',
   },
   ctaBtnInner: {

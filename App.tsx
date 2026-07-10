@@ -6,6 +6,7 @@ import { Text, ActivityIndicator, View, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   BarChart3,
   Package,
@@ -48,6 +49,7 @@ import { LAYOUT } from './src/theme/spacing';
 import { TabBounce } from './src/components/ui';
 import { useAuthStore } from './src/store';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
+import { ToastProvider } from './src/components/ToastContext';
 
 const BackHandler = Platform.OS === 'android' ? require('react-native').BackHandler : null;
 
@@ -217,6 +219,8 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: SURFACE.base }}>
+      <SafeAreaProvider>
+      <ToastProvider>
       <StatusBar style="light" />
       <NavigationContainer>
         <Stack.Navigator
@@ -239,10 +243,30 @@ export default function App() {
           ) : !isAuthenticated ? (
             // Unauthenticated but has onboarded — check if pending approval
             user?.accountStatus === 'pending' || user?.kycStatus === 'pending' ? (
-              <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} initialParams={{
-                email: user?.email || '',
-                kycUploaded: user?.kycStatus === 'submitted' || user?.kycStatus === 'approved',
-              }} />
+              <>
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Register" component={RegisterScreen} />
+                <Stack.Screen name="KYCForm" component={KYCFormScreen} />
+                <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} initialParams={{
+                  email: user?.email || '',
+                  kycUploaded: user?.kycStatus === 'submitted' || user?.kycStatus === 'approved',
+                  accountStatus: user?.accountStatus || 'pending',
+                  kycStatus: user?.kycStatus || 'pending',
+                  rejectionReason: user?.kycRejectionReason || '',
+                }} />
+              </>
+            ) : user?.accountStatus === 'rejected' || user?.kycStatus === 'rejected' ? (
+              <>
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Register" component={RegisterScreen} />
+                <Stack.Screen name="KYCForm" component={KYCFormScreen} />
+                <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} initialParams={{
+                  email: user?.email || '',
+                  accountStatus: 'rejected',
+                  kycStatus: 'rejected',
+                  rejectionReason: user?.kycRejectionReason || '',
+                }} />
+              </>
             ) : (
               <>
                 <Stack.Screen name="Login" component={LoginScreen} />
@@ -271,6 +295,8 @@ export default function App() {
           )}
         </Stack.Navigator>
       </NavigationContainer>
+      </ToastProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

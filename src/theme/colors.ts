@@ -120,23 +120,23 @@ export const LIGHT = {
 };
 
 // Gradient for inner light pages — subtle greyish-purple wash
-export const LIGHT_GRADIENT = ['#EFEAF4', '#E6DCF0', '#DED0EC'] as string[];
+export const LIGHT_GRADIENT = ['#EFEAF4', '#E6DCF0', '#DED0EC'] as [string, string, string];
 
 export const GRADIENT = {
   // Hero app background — dark radial faked with 3-stop linear
-  appBg: ['#4F136C', '#1A052E', '#090118'] as string[],
+  appBg: ['#4F136C', '#1A052E', '#090118'] as [string, string, string],
   // Primary CTA — neon violet → magenta
-  brand: ['#B83DF5', '#E14DFF'] as string[],
-  brandSoft: ['#2E1A42', '#1A0D26'] as string[],
+  brand: ['#B83DF5', '#E14DFF'] as [string, string],
+  brandSoft: ['#2E1A42', '#1A0D26'] as [string, string],
   // Full neon spectrum (headlines, splash, hero rings)
-  neon: ['#7B25F4', '#E14DFF', '#FF80EA'] as string[],
-  accent: ['#FF80EA', '#B83DF5'] as string[],
-  success: ['#22E082', '#12B76A'] as string[],
-  sunrise: ['#FFB088', '#E14DFF', '#7B25F4'] as string[],
+  neon: ['#7B25F4', '#E14DFF', '#FF80EA'] as [string, string, string],
+  accent: ['#FF80EA', '#B83DF5'] as [string, string],
+  success: ['#22E082', '#12B76A'] as [string, string],
+  sunrise: ['#FFB088', '#E14DFF', '#7B25F4'] as [string, string, string],
   // Glass shine sweep (diagonal highlight)
-  glassShine: ['rgba(247, 217, 255, 0.18)', 'rgba(247, 217, 255, 0)'] as string[],
+  glassShine: ['rgba(247, 217, 255, 0.18)', 'rgba(247, 217, 255, 0)'] as [string, string],
   // Card gradient — translucent purple tint
-  glassCard: ['rgba(247, 217, 255, 0.12)', 'rgba(247, 217, 255, 0.02)'] as string[],
+  glassCard: ['rgba(247, 217, 255, 0.12)', 'rgba(247, 217, 255, 0.02)'] as [string, string],
 };
 
 // Legacy flat map — keeps existing screens working while they migrate.

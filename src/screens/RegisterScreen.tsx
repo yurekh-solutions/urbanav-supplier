@@ -8,7 +8,6 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   StatusBar,
   Animated,
   Easing,
@@ -45,6 +44,7 @@ import {
 import { GRADIENT, GLASS, NEON, TEXT, SEMANTIC, SURFACE } from '../theme/colors';
 import { useAuthStore } from '../store';
 import { authAPI } from '../api';
+import { useToast } from '../components/ToastContext';
 
 const LOGO = require('../../assets/logo.jpg');
 
@@ -199,7 +199,7 @@ type ErrorPopup = {
 };
 
 export default function RegisterScreen({ navigation }: any) {
-  const { register } = useAuthStore();
+  const { showToast } = useToast();
   const [step, setStep] = useState<0 | 1>(0);
   const [submitting, setSubmitting] = useState(false);
   // Inline error banner. Cleared on any field edit / step change.
@@ -323,7 +323,7 @@ export default function RegisterScreen({ navigation }: any) {
 
       const size = asset.size ?? 0;
       if (size > 5 * 1024 * 1024) {
-        Alert.alert('File too large', 'Please select a file under 5 MB.');
+        showToast({ message: 'File too large. Please select a file under 5 MB.', type: 'error' });
         return;
       }
 
@@ -337,7 +337,7 @@ export default function RegisterScreen({ navigation }: any) {
         },
       }));
     } catch (e: any) {
-      Alert.alert('Picker error', e?.message || 'Could not open file picker');
+      showToast({ message: e?.message || 'Could not open file picker', type: 'error' });
     }
   };
 
@@ -393,6 +393,8 @@ export default function RegisterScreen({ navigation }: any) {
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
         password,
+        userType: 'supplier',
+        role: 'supplier',
         // Send a flat address object. Server /auth/register accepts both
         // nested `address` and flat `street/city/state/pincode` fields.
         address: {
@@ -411,13 +413,21 @@ export default function RegisterScreen({ navigation }: any) {
 
       console.log('Submitting registration:', JSON.stringify(payload, null, 2));
 
-      // Register — store forces role/userType='supplier'. For suppliers the
-      // server ALWAYS returns accountStatus='pending' and the store resolves
-      // with { pending: true }. We must NOT early-return here, because then
-      // the KYC documents the user just uploaded would be thrown away.
-      // Instead: register first, then proceed to upload KYC while we still
-      // have the freshly-issued token in AsyncStorage.
-      await register(payload);
+      // CRITICAL: Call API directly instead of store.register().
+      // store.register() sets hasOnboarded:false which triggers navigator
+      // re-render → destroys current stack → navigation.replace fails.
+      // We navigate FIRST, then update store AFTER.
+      const regRes = await authAPI.register({ ...payload, role: 'supplier', userType: 'supplier' });
+      const regData: any = regRes.data || {};
+      const regUser = regData.user ?? regData;
+      const regToken = regData.token ?? regData.accessToken;
+
+      // Save token for KYC upload
+      await AsyncStorage.multiSet([
+        ['@urbanav_user', JSON.stringify(regUser)],
+        ['@urbanav_token', regToken],
+        ['@urbanav_pending', 'true'],
+      ]);
 
       // Upload multi-slot KYC documents + business detail fields.
       // GST/PAN numbers are no longer sent — admin reads them off the PDF.
@@ -469,11 +479,22 @@ export default function RegisterScreen({ navigation }: any) {
             primaryLabel: 'CONTINUE ANYWAY',
             onPrimary: () => {
               setErrorPopup((p) => ({ ...p, visible: false }));
-              // Navigate directly to PendingApproval (skip success popup)
               navigation.replace('PendingApproval', {
                 email: email.trim().toLowerCase(),
                 kycUploaded: false,
+                accountStatus: regUser?.accountStatus || 'pending',
+                kycStatus: regUser?.kycStatus || 'pending',
               });
+              // Delay store update to let navigation process first
+              setTimeout(() => {
+                useAuthStore.setState({
+                  user: regUser,
+                  token: regToken,
+                  isLoading: false,
+                  isAuthenticated: false,
+                  hasOnboarded: false,
+                });
+              }, 100);
             },
             secondaryLabel: 'DISMISS',
             onSecondary: () => setErrorPopup((p) => ({ ...p, visible: false })),
@@ -482,32 +503,53 @@ export default function RegisterScreen({ navigation }: any) {
         return;
       }
 
-      // All good — navigate DIRECTLY to PendingApproval screen.
-      // The popup modal was causing a blank screen issue, so we skip it
-      // and go straight to the full PendingApproval status screen.
+      // All good — navigate DIRECTLY to PendingApproval screen FIRST.
+      // We MUST navigate before updating the store, because store.setState()
+      // triggers navigator re-render which destroys the current stack.
       console.log('✅ Registration successful! Navigating directly to PendingApproval...');
       console.log('📧 Email:', email.trim().toLowerCase());
       console.log('📄 KYC Uploaded:', !kycUploadFailed);
+
       try {
         navigation.replace('PendingApproval', {
           email: email.trim().toLowerCase(),
-          kycUploaded: true,
+          kycUploaded: !kycUploadFailed,
+          accountStatus: regUser?.accountStatus || 'pending',
+          kycStatus: regUser?.kycStatus || 'pending',
         });
         console.log('✅ Successfully navigated to PendingApproval');
       } catch (navError) {
         console.error('❌ Navigation failed, trying fallback:', navError);
         navigation.navigate('PendingApproval', {
           email: email.trim().toLowerCase(),
-          kycUploaded: true,
+          kycUploaded: !kycUploadFailed,
+          accountStatus: regUser?.accountStatus || 'pending',
+          kycStatus: regUser?.kycStatus || 'pending',
         });
       }
+
+      // Update store AFTER navigation — delay to let nav action process first
+      setTimeout(() => {
+        useAuthStore.setState({
+          user: regUser,
+          token: regToken,
+          isLoading: false,
+          isAuthenticated: false,
+          hasOnboarded: false,
+        });
+      }, 100);
     } catch (e: any) {
       console.error(' Registration error occurred:', e?.message || e);
       setSubmitting(false);
       const status = e?.response?.status;
       const apiMsg = e?.response?.data?.message || e?.message || '';
       const apiErrorDetail = e?.response?.data?.error || '';
-      console.error('Registration error:', status, JSON.stringify(e?.response?.data || e, null, 2));
+      console.error('Registration error:', JSON.stringify({
+        status: e?.response?.status,
+        data: e?.response?.data,
+        message: e?.message,
+        code: e?.code,
+      }, null, 2));
 
       // Map the server error to a clear, supplier-friendly popup.
       let title = 'Registration failed';

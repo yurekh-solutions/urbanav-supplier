@@ -18,6 +18,7 @@ export function resolveMediaUrl(url?: string | null): string | null {
 
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -43,7 +44,12 @@ api.interceptors.response.use(
   async (error) => {
     const status = error?.response?.status;
     const code = error?.response?.data?.code;
-    if (status === 401 || code === 'USER_NOT_FOUND') {
+    // Don't clear session on 401s from auth endpoints (login/register)
+    // — those are expected "wrong password" responses, not stale tokens.
+    const isAuthEndpoint = /\/auth\/(login|register|verify-otp|forgot-password)/i.test(
+      error?.config?.url || ''
+    );
+    if ((status === 401 || code === 'USER_NOT_FOUND') && !isAuthEndpoint) {
       try {
         await AsyncStorage.multiRemove([
           '@urbanav_user',
@@ -64,6 +70,8 @@ export const authAPI = {
   getMe: () => api.get('/auth/me'),
   updateProfile: (data: any) => api.put('/auth/profile', data),
   submitKYC: (data: any) => api.put('/auth/kyc', data),
+  // Public endpoint — check approval status by email (no auth required)
+  checkStatus: (email: string) => api.get('/auth/check-status', { params: { email } }),
   // Upload a KYC document (PDF/JPG/PNG) using multipart/form-data.
   uploadKycDocument: async (uri: string, filename: string, mimeType = 'application/pdf', token?: string) => {
     const form = new FormData();

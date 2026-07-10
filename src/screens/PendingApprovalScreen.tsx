@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,21 +9,22 @@ import {
   Easing,
   Image,
   ScrollView,
+  BackHandler,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  ShieldCheck,
   Clock,
   Mail,
   CheckCircle2,
-  ArrowRight,
+  XCircle,
   FileText,
-  HelpCircle,
-  Lock,
-  Users,
+  AlertTriangle,
+  ArrowRight,
 } from 'lucide-react-native';
 import { GRADIENT, GLASS, NEON, TEXT, SEMANTIC } from '../theme/colors';
+import { authAPI } from '../api';
 
 const LOGO = require('../../assets/logo.jpg');
 
@@ -36,20 +37,68 @@ export default function PendingApprovalScreen({ navigation, route }: any) {
   const email: string | undefined = route?.params?.email;
   const kycUploaded: boolean = route?.params?.kycUploaded !== false;
 
-  // Gentle pulse on the shield icon to signal "in review".
+  // Live status from polling — starts with route params, updates from backend
+  const [liveStatus, setLiveStatus] = useState({
+    accountStatus: route?.params?.accountStatus || 'pending',
+    kycStatus: route?.params?.kycStatus || 'pending',
+    rejectionReason: route?.params?.rejectionReason || '',
+  });
+
+  const accountStatus = liveStatus.accountStatus;
+  const kycStatus = liveStatus.kycStatus;
+  const rejectionReason = liveStatus.rejectionReason;
+
+  const isRejected = accountStatus === 'rejected' || kycStatus === 'rejected';
+  const isApproved = accountStatus === 'active' || kycStatus === 'approved';
+  const isPending = !isRejected && !isApproved;
+
+  // Poll backend every 10s to check if admin has approved/rejected
+  useEffect(() => {
+    if (!email || isApproved || isRejected) return; // Stop polling once resolved
+
+    const checkStatus = async () => {
+      try {
+        const res = await authAPI.checkStatus(email);
+        const d = res.data;
+        if (d?.success) {
+          setLiveStatus({
+            accountStatus: d.accountStatus || 'pending',
+            kycStatus: d.kycStatus || 'pending',
+            rejectionReason: d.kycRejectionReason || '',
+          });
+        }
+      } catch {
+        // Silently ignore — will retry on next interval
+      }
+    };
+
+    // Check immediately, then every 10 seconds
+    checkStatus();
+    const interval = setInterval(checkStatus, 10000);
+    return () => clearInterval(interval);
+  }, [email, isApproved, isRejected]);
+
+  // Block hardware back button on Android — screen is LOCKED
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => handler.remove();
+  }, []);
+
+  // Gentle pulse on the icon
   const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
           toValue: 1,
-          duration: 1400,
+          duration: 1200,
           easing: Easing.inOut(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(pulse, {
           toValue: 0,
-          duration: 1400,
+          duration: 1200,
           easing: Easing.inOut(Easing.cubic),
           useNativeDriver: true,
         }),
@@ -57,23 +106,59 @@ export default function PendingApprovalScreen({ navigation, route }: any) {
     ).start();
   }, []);
 
-  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
-  const opacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] });
+  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
+  const glowOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.7] });
 
-  const goToLogin = () => {
-    // If still pending, don't allow going to login — user is LOCKED here.
-    // Only allow navigation to login if admin has approved (status === 'active').
-    navigation.replace('Login');
-  };
+  // Icon color & glow color based on status
+  const statusColor = isRejected ? '#FF5B6E' : isApproved ? '#22E082' : '#E666FF';
+  const glowColor = isRejected ? 'rgba(255, 91, 110, 0.20)' : isApproved ? 'rgba(34, 224, 130, 0.20)' : 'rgba(230, 102, 255, 0.18)';
+  const iconBg = isRejected ? 'rgba(255, 91, 110, 0.12)' : isApproved ? 'rgba(34, 224, 130, 0.12)' : 'rgba(230, 102, 255, 0.10)';
+  const iconBorder = isRejected ? 'rgba(255, 91, 110, 0.50)' : isApproved ? 'rgba(34, 224, 130, 0.50)' : 'rgba(230, 102, 255, 0.45)';
+
+  const StatusIcon = isRejected ? XCircle : isApproved ? CheckCircle2 : Clock;
+
+  const statusTitle = isRejected ? 'Application Rejected' : isApproved ? 'Application Approved!' : 'Application Submitted!';
+  const statusSubtitle = isRejected
+    ? 'Your supplier application was not approved. Please review the reason below and resubmit.'
+    : isApproved
+    ? 'Congratulations! Your supplier account has been verified and approved.'
+    : 'Your supplier application has been sent to our admin team for review.';
+
+  const statusPillText = isRejected ? 'Rejected' : isApproved ? 'Approved' : 'Awaiting admin approval';
+  const statusPillColor = isRejected ? 'rgba(255, 91, 110, 0.45)' : isApproved ? 'rgba(34, 224, 130, 0.45)' : 'rgba(255, 191, 71, 0.45)';
+  const statusPillBg = isRejected ? 'rgba(255, 91, 110, 0.12)' : isApproved ? 'rgba(34, 224, 130, 0.12)' : 'rgba(255, 191, 71, 0.12)';
+  const PillIcon = isRejected ? AlertTriangle : isApproved ? CheckCircle2 : Clock;
 
   return (
-    <LinearGradient colors={GRADIENT.appBg as string[]} style={{ flex: 1 }}>
+    <LinearGradient colors={GRADIENT.appBg} style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" />
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
+          {/* ✅ STATUS ICON — changes based on pending/approved/rejected */}
+          <View style={styles.successWrap}>
+            <Animated.View
+              style={[
+                styles.successGlow,
+                { transform: [{ scale }], opacity: glowOpacity, backgroundColor: glowColor },
+              ]}
+            />
+            <View style={[styles.successIconBox, { backgroundColor: iconBg, borderColor: iconBorder }]}>
+              <StatusIcon size={44} color={statusColor} strokeWidth={2} />
+            </View>
+          </View>
+
+          <Text style={[styles.successTitle, { color: statusColor }]}>{statusTitle}</Text>
+          <Text style={styles.successSubtitle}>{statusSubtitle}</Text>
+
+          {/* Status pill */}
+          <View style={[styles.statusPill, { borderColor: statusPillColor, backgroundColor: statusPillBg }]}>
+            <PillIcon size={13} color={statusColor} strokeWidth={2.2} />
+            <Text style={[styles.statusPillText, { color: statusColor }]}>{statusPillText}</Text>
+          </View>
+
           {/* Brand header */}
           <View style={styles.header}>
             <View style={styles.logoCircle}>
@@ -83,110 +168,40 @@ export default function PendingApprovalScreen({ navigation, route }: any) {
             <Text style={styles.appSub}>Supplier Portal</Text>
           </View>
 
-          {/* Pulsing shield badge */}
-          <View style={styles.badgeWrap}>
-            <Animated.View
-              style={[
-                styles.badgeGlow,
-                { transform: [{ scale }], opacity },
-              ]}
-            />
-            <View style={styles.badge}>
-              <ShieldCheck size={52} color={NEON.glow} strokeWidth={1.8} />
+          {/* ✨ REJECTION REASON — shown only when rejected */}
+          {isRejected && rejectionReason ? (
+            <View style={styles.rejectionCard}>
+              <View style={styles.rejectionHeader}>
+                <AlertTriangle size={16} color="#FF5B6E" strokeWidth={2.2} />
+                <Text style={styles.rejectionHeaderText}>Rejection Reason</Text>
+              </View>
+              <Text style={styles.rejectionText}>{rejectionReason}</Text>
             </View>
-          </View>
+          ) : null}
 
-          {/* Title + subtitle */}
-          <Text style={styles.title}>Awaiting admin approval</Text>
-          <Text style={styles.subtitle}>
-            Your supplier application has been submitted successfully. Our team
-            is reviewing your KYC documents. You'll be able to sign in once
-            admin verification is complete.
-          </Text>
-
-          {/* Status pill */}
-          <View style={styles.statusPill}>
-            <Clock size={14} color={SEMANTIC.warning} strokeWidth={2} />
-            <Text style={styles.statusPillText}>Verification in progress</Text>
-          </View>
-
-          {/* ✨ "Why am I seeing this screen?" — explains to the supplier exactly
-              why admin approval is mandatory and why they can't sign in yet. */}
-          <View style={styles.whyCard}>
-            <View style={styles.whyHeader}>
-              <View style={styles.whyIconCircle}>
-                <HelpCircle size={16} color={NEON.glow} strokeWidth={2.2} />
+          {/* ✨ APPROVAL SUCCESS — shown only when approved */}
+          {isApproved ? (
+            <View style={styles.approvalCard}>
+              <View style={styles.approvalHeader}>
+                <CheckCircle2 size={16} color="#22E082" strokeWidth={2.2} />
+                <Text style={styles.approvalHeaderText}>You're all set!</Text>
               </View>
-              <Text style={styles.whyHeaderText}>Why am I seeing this screen?</Text>
+              <Text style={styles.approvalText}>
+                Your business has been verified. You can now sign in to list equipment, accept bookings, and manage orders.
+              </Text>
+              <TouchableOpacity
+                onPress={() => navigation.replace('Login')}
+                activeOpacity={0.85}
+                style={styles.signInBtn}
+              >
+                <Text style={styles.signInBtnText}>GO TO SIGN IN</Text>
+                <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.5} />
+              </TouchableOpacity>
             </View>
+          ) : null}
 
-            <View style={styles.whyRow}>
-              <View style={styles.whyDot}>
-                <ShieldCheck size={13} color={NEON.glow} strokeWidth={2.2} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.whyRowTitle}>Trust & safety for buyers</Text>
-                <Text style={styles.whyRowText}>
-                  Every supplier on UrbanAV is manually verified so buyers can
-                  rent equipment confidently. This protects both sides from
-                  fraud and low-quality listings.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.whyRow}>
-              <View style={styles.whyDot}>
-                <FileText size={13} color={NEON.glow} strokeWidth={2.2} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.whyRowTitle}>
-                  {kycUploaded
-                    ? 'Your KYC documents are under review'
-                    : 'Your KYC documents are not uploaded yet'}
-                </Text>
-                <Text style={styles.whyRowText}>
-                  {kycUploaded
-                    ? 'Admin is checking your PAN, Bank Proof, Aadhaar and GST / licence documents against your business details. Approval usually takes 24–48 hours.'
-                    : 'Your account was created, but documents are still missing. Once you sign in after approval, upload them from “My Documents”. Admin cannot approve you without valid PAN and Bank Proof.'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.whyRow}>
-              <View style={styles.whyDot}>
-                <Lock size={13} color={NEON.glow} strokeWidth={2.2} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.whyRowTitle}>Sign-in is locked until approval</Text>
-                <Text style={styles.whyRowText}>
-                  Your login is intentionally blocked right now. The moment
-                  admin approves your account, you'll be able to sign in and
-                  start listing equipment, accepting inquiries and receiving
-                  orders.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.whyRow}>
-              <View style={styles.whyDot}>
-                <Users size={13} color={NEON.glow} strokeWidth={2.2} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.whyRowTitle}>What should I do now?</Text>
-                <Text style={styles.whyRowText}>
-                  Nothing is required from your side — just wait for our
-                  approval email. If admin needs clarification on any document,
-                  we'll reach out at{' '}
-                  <Text style={{ color: NEON.glow, fontWeight: '700' }}>
-                    {email || 'your registered email'}
-                  </Text>
-                  .
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Info card: what happens next */}
+          {/* Info card: what happens next — only show for pending */}
+          {isPending ? (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>What happens next</Text>
 
@@ -243,26 +258,7 @@ export default function PendingApprovalScreen({ navigation, route }: any) {
               </View>
             </View>
           </View>
-
-          {/* CTA — only show if there's a way out (admin approved or new user) */}
-          <TouchableOpacity onPress={goToLogin} activeOpacity={0.85} style={styles.primaryBtn}>
-            <LinearGradient
-              colors={GRADIENT.brand as string[]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <LinearGradient
-              colors={GRADIENT.glassShine as string[]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.primaryBtnInner}>
-              <Text style={styles.primaryBtnText}>GO TO SIGN IN</Text>
-              <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.5} />
-            </View>
-          </TouchableOpacity>
+          ) : null}
 
           <Text style={styles.helpText}>
             Need help? Contact{' '}
@@ -278,8 +274,47 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 32,
     paddingBottom: 40,
+  },
+  // ✅ Application Submitted success UI
+  successWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 120,
+    marginBottom: 8,
+  },
+  successGlow: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: 'rgba(34, 224, 130, 0.20)',
+  },
+  successIconBox: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(34, 224, 130, 0.12)',
+    borderWidth: 2,
+    borderColor: 'rgba(34, 224, 130, 0.50)',
+  },
+  successTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#22E082',
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  successSubtitle: {
+    fontSize: 14,
+    color: 'rgba(247, 217, 255, 0.65)',
+    textAlign: 'center',
+    lineHeight: 21,
+    marginBottom: 18,
   },
   header: {
     alignItems: 'center',
@@ -302,45 +337,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.6,
     textTransform: 'uppercase',
     marginTop: 2,
-  },
-  badgeWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    marginBottom: 22,
-    height: 140,
-  },
-  badgeGlow: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(230, 102, 255, 0.18)',
-  },
-  badge: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(230, 102, 255, 0.10)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(230, 102, 255, 0.45)',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: TEXT.primary,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: 'rgba(247, 217, 255, 0.6)',
-    textAlign: 'center',
-    lineHeight: 21,
-    marginBottom: 18,
   },
   statusPill: {
     alignSelf: 'center',
@@ -413,94 +409,79 @@ const styles = StyleSheet.create({
     color: TEXT.tertiary,
     lineHeight: 18,
   },
-  primaryBtn: {
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(247, 217, 255, 0.35)',
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
-  primaryBtnInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: 'rgba(247, 217, 255, 0.08)',
-    position: 'relative',
-  },
-  primaryBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 1.5,
-  },
   helpText: {
     fontSize: 12,
     textAlign: 'center',
     color: TEXT.tertiary,
   },
-  // "Why am I seeing this screen?" card — explains admin-approval gate.
-  whyCard: {
+  // Rejection card
+  rejectionCard: {
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: 'rgba(230, 102, 255, 0.35)',
-    backgroundColor: 'rgba(230, 102, 255, 0.06)',
+    borderColor: 'rgba(255, 91, 110, 0.35)',
+    backgroundColor: 'rgba(255, 91, 110, 0.06)',
     padding: 16,
     marginBottom: 18,
   },
-  whyHeader: {
+  rejectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 14,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(230, 102, 255, 0.18)',
+    marginBottom: 12,
   },
-  whyIconCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(230, 102, 255, 0.45)',
-    backgroundColor: 'rgba(230, 102, 255, 0.14)',
-  },
-  whyHeaderText: {
+  rejectionHeaderText: {
     fontSize: 13.5,
     fontWeight: '800',
-    color: TEXT.primary,
+    color: '#FF5B6E',
     letterSpacing: 0.3,
   },
-  whyRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 14,
+  rejectionText: {
+    fontSize: 13,
+    color: 'rgba(247, 217, 255, 0.75)',
+    lineHeight: 20,
   },
-  whyDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+  // Approval card
+  approvalCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: 'rgba(34, 224, 130, 0.35)',
+    backgroundColor: 'rgba(34, 224, 130, 0.06)',
+    padding: 16,
+    marginBottom: 18,
+  },
+  approvalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  approvalHeaderText: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#22E082',
+    letterSpacing: 0.3,
+  },
+  approvalText: {
+    fontSize: 13,
+    color: 'rgba(247, 217, 255, 0.75)',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  signInBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(34, 224, 130, 0.20)',
     borderWidth: 1,
-    borderColor: 'rgba(230, 102, 255, 0.45)',
-    backgroundColor: 'rgba(230, 102, 255, 0.12)',
-    marginTop: 1,
+    borderColor: 'rgba(34, 224, 130, 0.45)',
   },
-  whyRowTitle: {
+  signInBtnText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: TEXT.primary,
-    marginBottom: 3,
-  },
-  whyRowText: {
-    fontSize: 12,
-    color: TEXT.tertiary,
-    lineHeight: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1.5,
   },
 });
