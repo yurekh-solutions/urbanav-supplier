@@ -1,1 +1,1 @@
-Fix EAS preview build env config
+Remove unused @expo/ngrok dependency to fix EAS build
