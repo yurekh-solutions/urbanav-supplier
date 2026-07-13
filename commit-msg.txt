@@ -1,1 +1,1 @@
-Remove unused @expo/ngrok dependency to fix EAS build
+Update lucide-react-native to v1.24 for React 19 support, fix EAS build
