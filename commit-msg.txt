@@ -1,1 +1,1 @@
-Fix EAS build: remove NODE_ENV production, add NPM_CONFIG_OMITAdd EXPO_PUBLIC_API_URL to EAS preview profile  
+Fix EAS preview build env config
