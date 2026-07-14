@@ -242,6 +242,17 @@ function LoginContent({ navigation }: any) {
                 secureTextEntry
               />
 
+              {/* Forgot Password link */}
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ForgotPassword')}
+                style={{ alignSelf: 'flex-end', marginTop: 8, marginBottom: 16 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={{ color: NEON.glow, fontSize: 13, fontWeight: '600' }}>
+                  Forgot Password?
+                </Text>
+              </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={handleLogin}
                 disabled={isLoading}
@@ -427,22 +438,23 @@ function LoginContent({ navigation }: any) {
 function GlassInput({
   label, placeholder, value, onChangeText,
   secureTextEntry, keyboardType, autoCapitalize, rightIcon,
-  error,
+  error, onBlur,
 }: {
   label: string; placeholder: string; value: string;
   onChangeText: (t: string) => void;
   secureTextEntry?: boolean; keyboardType?: any; autoCapitalize?: any;
   rightIcon?: React.ReactNode;
   error?: string;
+  onBlur?: () => void;
 }) {
   const [focused, setFocused] = useState(false);
-  const hasError = !!error;
+  const hasError = !!error && !focused;
   return (
     <View style={{ marginBottom: hasError ? 4 : 16 }}>
-      <Text style={[styles.label, focused && !hasError && styles.labelFocused, hasError && { color: '#FF5B6E' }]}>{label.toUpperCase()}</Text>
+      <Text style={[styles.label, focused && styles.labelFocused, hasError && { color: '#FF5B6E' }]}>{label.toUpperCase()}</Text>
       <View style={[
         styles.inputWrap,
-        focused && !hasError && styles.inputWrapFocused,
+        focused && styles.inputWrapFocused,
         hasError && { borderColor: 'rgba(255, 91, 110, 0.6)', backgroundColor: 'rgba(255, 91, 110, 0.06)' },
       ]}>
         <TextInput
@@ -455,7 +467,7 @@ function GlassInput({
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onBlur={() => { setFocused(false); onBlur?.(); }}
         />
         {rightIcon && rightIcon}
       </View>
@@ -477,32 +489,66 @@ function RegisterContent({ navigation }: any) {
   const [state, setState] = useState('');
   const [pincode, setPincode] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const { showToast } = useToast();
   const { register, isLoading } = useAuthStore();
 
-  // ── Live validators — always active ──
+  // ── Live validators — run on every keystroke ─────────────────────────
   const errors: Record<string, string> = {};
-
-  if (!businessName.trim()) errors.businessName = 'Business name is required';
-  if (!name.trim()) errors.name = 'Your name is required';
-  if (!email.trim()) errors.email = 'Email is required';
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = 'Enter a valid email address';
-  if (!phone.trim()) errors.phone = 'Phone number is required';
-  else if (!/^[+]?\d{10,13}$/.test(phone.replace(/[\s-]/g, ''))) errors.phone = 'Enter a valid phone number';
-  if (!gstNumber.trim()) errors.gstNumber = 'GST number is required';
-  else if (gstNumber.trim().length !== 15) errors.gstNumber = `GST must be 15 chars (${gstNumber.trim().length}/15)`;
-  if (!panNumber.trim()) errors.panNumber = 'PAN number is required';
-  else if (panNumber.trim().length !== 10) errors.panNumber = `PAN must be 10 chars (${panNumber.trim().length}/10)`;
-  else if (!/^[A-Z]{5}\d{4}[A-Z]$/.test(panNumber.trim())) errors.panNumber = 'Invalid PAN format (e.g. ABCDE1234F)';
-  if (!city.trim()) errors.city = 'City is required';
-  if (!state.trim()) errors.state = 'State is required';
-  if (!pincode.trim()) errors.pincode = 'Pincode is required';
-  else if (pincode.trim().length !== 6) errors.pincode = `Pincode must be 6 digits (${pincode.trim().length}/6)`;
-  if (!password) errors.password = 'Password is required';
-  else if (password.length < 6) errors.password = `Min 6 characters (${password.length}/6)`;
+  // Required checks (show after first submit attempt or if user typed then cleared)
+  const showRequired = submitted;
+  if (businessName.length > 0 || showRequired) { if (!businessName.trim()) errors.businessName = 'Business name is required'; }
+  if (name.length > 0 || showRequired) { if (!name.trim()) errors.name = 'Your name is required'; }
+  if (email.length > 0 || showRequired) {
+    if (!email.trim()) errors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = 'Enter a valid email address';
+  }
+  if (phone.length > 0 || showRequired) {
+    if (!phone.trim()) errors.phone = 'Phone number is required';
+    else if (!/^[+]?\d{10,13}$/.test(phone.replace(/[\s-]/g, ''))) errors.phone = 'Enter a valid phone number';
+  }
+  if (gstNumber.length > 0 || showRequired) {
+    if (!gstNumber.trim()) errors.gstNumber = 'GST number is required';
+    else if (gstNumber.trim().length !== 15) errors.gstNumber = `GST must be 15 chars (${gstNumber.trim().length}/15)`;
+  }
+  if (panNumber.length > 0 || showRequired) {
+    if (!panNumber.trim()) errors.panNumber = 'PAN number is required';
+    else if (panNumber.trim().length !== 10) errors.panNumber = `PAN must be 10 chars (${panNumber.trim().length}/10)`;
+    else if (!/^[A-Z]{5}\d{4}[A-Z]$/.test(panNumber.trim())) errors.panNumber = 'Invalid PAN format (e.g. ABCDE1234F)';
+  }
+  if (city.length > 0 || showRequired) { if (!city.trim()) errors.city = 'City is required'; }
+  if (state.length > 0 || showRequired) { if (!state.trim()) errors.state = 'State is required'; }
+  if (pincode.length > 0 || showRequired) {
+    if (!pincode.trim()) errors.pincode = 'Pincode is required';
+    else if (pincode.trim().length !== 6) errors.pincode = `Pincode must be 6 digits (${pincode.trim().length}/6)`;
+  }
+  if (password.length > 0 || showRequired) {
+    if (!password) errors.password = 'Password is required';
+    else if (password.length < 6) errors.password = `Min 6 characters (${password.length}/6)`;
+  }
 
   const handleRegister = async () => {
-    if (Object.keys(errors).length > 0) {
+    setSubmitted(true);
+    // Full validation for submit
+    const e: Record<string, string> = {};
+    if (!businessName.trim()) e.businessName = 'Business name is required';
+    if (!name.trim()) e.name = 'Your name is required';
+    if (!email.trim()) e.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) e.email = 'Enter a valid email address';
+    if (!phone.trim()) e.phone = 'Phone number is required';
+    else if (!/^[+]?\d{10,13}$/.test(phone.replace(/[\s-]/g, ''))) e.phone = 'Enter a valid phone number';
+    if (!gstNumber.trim()) e.gstNumber = 'GST number is required';
+    else if (gstNumber.trim().length !== 15) e.gstNumber = `GST must be 15 chars (${gstNumber.trim().length}/15)`;
+    if (!panNumber.trim()) e.panNumber = 'PAN number is required';
+    else if (panNumber.trim().length !== 10) e.panNumber = `PAN must be 10 chars (${panNumber.trim().length}/10)`;
+    else if (!/^[A-Z]{5}\d{4}[A-Z]$/.test(panNumber.trim())) e.panNumber = 'Invalid PAN format (e.g. ABCDE1234F)';
+    if (!city.trim()) e.city = 'City is required';
+    if (!state.trim()) e.state = 'State is required';
+    if (!pincode.trim()) e.pincode = 'Pincode is required';
+    else if (pincode.trim().length !== 6) e.pincode = `Pincode must be 6 digits (${pincode.trim().length}/6)`;
+    if (!password) e.password = 'Password is required';
+    else if (password.length < 6) e.password = `Min 6 characters (${password.length}/6)`;
+    if (Object.keys(e).length > 0) {
       showToast({ message: 'Please fix the highlighted errors.', type: 'error' });
       return;
     }
@@ -519,25 +565,14 @@ function RegisterContent({ navigation }: any) {
         panNumber: panNumber.trim().toUpperCase(),
         serviceArea: { city: city.trim(), state: state.trim(), pincode: pincode.trim() },
       });
-      // Registration success → go straight to locked PendingApprovalScreen
-      navigation.replace('PendingApproval', {
-        email: email.trim().toLowerCase(),
-        kycUploaded: false,
-        accountStatus: 'pending',
-        kycStatus: 'pending',
-      });
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || '';
       const isTimeout = e?.code === 'ECONNABORTED' || /timeout/i.test(msg);
       if (isTimeout || (!e?.response && /network/i.test(msg))) {
         showToast({ message: 'The server is taking too long to respond. Please wait ~30 seconds and try again.', type: 'error' });
       } else if (msg.includes('pending') || msg.includes('approval')) {
-        navigation.replace('PendingApproval', {
-          email: email.trim().toLowerCase(),
-          kycUploaded: false,
-          accountStatus: 'pending',
-          kycStatus: 'pending',
-        });
+        showToast({ message: 'Registration complete. Your account is pending admin approval.', type: 'info' });
+        setTimeout(() => navigation.navigate('Login'), 2500);
       } else {
         showToast({ message: msg || 'Registration failed. Please try again.', type: 'error' });
       }

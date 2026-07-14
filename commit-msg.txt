@@ -1,1 +1,1 @@
-Update lucide-react-native to v1.24 for React 19 support, fix EAS build
+Add AppIntroSlider: 4-step app value prop slider after overview onboarding

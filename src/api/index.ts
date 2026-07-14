@@ -70,8 +70,6 @@ export const authAPI = {
   getMe: () => api.get('/auth/me'),
   updateProfile: (data: any) => api.put('/auth/profile', data),
   submitKYC: (data: any) => api.put('/auth/kyc', data),
-  // Public endpoint — check approval status by email (no auth required)
-  checkStatus: (email: string) => api.get('/auth/check-status', { params: { email } }),
   // Upload a KYC document (PDF/JPG/PNG) using multipart/form-data.
   uploadKycDocument: async (uri: string, filename: string, mimeType = 'application/pdf', token?: string) => {
     const form = new FormData();

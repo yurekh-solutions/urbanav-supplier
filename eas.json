@@ -16,6 +16,7 @@
         "buildType": "apk"
       },
       "env": {
+        "NODE_ENV": "production",
         "EXPO_PUBLIC_API_URL": "https://server-1-xgr2.onrender.com/api"
       }
     },

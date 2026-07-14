@@ -24,6 +24,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import KYCFormScreen from './src/screens/KYCFormScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import PendingApprovalScreen from './src/screens/PendingApprovalScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import MyDocumentsScreen from './src/screens/MyDocumentsScreen';
 
 // Shared screens
@@ -237,6 +238,7 @@ export default function App() {
               <Stack.Screen name="Onboarding" component={OnboardingScreen} />
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
               <Stack.Screen name="KYCForm" component={KYCFormScreen} />
               <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
             </>
@@ -246,6 +248,7 @@ export default function App() {
               <>
                 <Stack.Screen name="Login" component={LoginScreen} />
                 <Stack.Screen name="Register" component={RegisterScreen} />
+                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
                 <Stack.Screen name="KYCForm" component={KYCFormScreen} />
                 <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} initialParams={{
                   email: user?.email || '',
@@ -259,6 +262,7 @@ export default function App() {
               <>
                 <Stack.Screen name="Login" component={LoginScreen} />
                 <Stack.Screen name="Register" component={RegisterScreen} />
+                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
                 <Stack.Screen name="KYCForm" component={KYCFormScreen} />
                 <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} initialParams={{
                   email: user?.email || '',
@@ -271,6 +275,7 @@ export default function App() {
               <>
                 <Stack.Screen name="Login" component={LoginScreen} />
                 <Stack.Screen name="Register" component={RegisterScreen} />
+                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
                 <Stack.Screen name="KYCForm" component={KYCFormScreen} />
                 <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
               </>
