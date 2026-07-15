@@ -240,7 +240,6 @@ export default function App() {
               <Stack.Screen name="MyEquipment" component={MyEquipmentScreen} />
               <Stack.Screen name="Inquiries" component={IncomingInquiriesScreen} />
               <Stack.Screen name="Earnings" component={EarningsScreen} />
-              <Stack.Screen name="Profile" component={ProfileScreen} />
               <Stack.Screen name="Addresses" component={AddressesScreen} />
               <Stack.Screen name="Notifications" component={NotificationsScreen} />
               <Stack.Screen name="Terms" component={TermsScreen} />
