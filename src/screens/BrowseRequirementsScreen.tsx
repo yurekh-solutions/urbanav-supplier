@@ -61,8 +61,8 @@ type Requirement = {
 type FilterTab = 'open' | 'my_offers' | 'won' | 'all';
 
 const STATUS_FILTERS: { label: string; value: FilterTab }[] = [
-  { label: 'Open', value: 'open' },
-  { label: 'My Offers', value: 'my_offers' },
+  { label: 'Available', value: 'open' },
+  { label: 'My Bids', value: 'my_offers' },
   { label: 'Won', value: 'won' },
   { label: 'All', value: 'all' },
 ];
@@ -170,14 +170,26 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
     <LightScreenBackground>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         {/* Header */}
-        <View style={{ paddingHorizontal: SPACING.base, paddingTop: SPACING.sm, paddingBottom: SPACING.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <ClipboardList size={22} color={NEON.glow} />
-            <Text style={[TYPE.h2, { color: LIGHT.text, marginLeft: 8 }]}>New Jobs</Text>
+        <View style={{ paddingHorizontal: SPACING.base, paddingTop: SPACING.base, paddingBottom: SPACING.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+            <View style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: NEON.purple,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 12,
+            }}>
+              <ClipboardList size={20} color="#FFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[TYPE.h2, { color: LIGHT.text, fontWeight: '800' }]}>Find Work</Text>
+              <Text style={[TYPE.caption, { color: LIGHT.textSecondary }]}>
+                {summary.open} {summary.open === 1 ? 'job' : 'jobs'} available now
+              </Text>
+            </View>
           </View>
-          <Text style={[TYPE.caption, { color: LIGHT.textSecondary }]}>
-            {summary.total} job{summary.total !== 1 ? 's' : ''} available · Send your price to get hired.
-          </Text>
         </View>
 
         {/* Filter tabs */}
@@ -232,20 +244,30 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
           >
             {requirements.length === 0 ? (
               <View style={{ alignItems: 'center', paddingVertical: 60 }}>
-                <ClipboardList size={48} color={LIGHT.textMuted} />
-                <Text style={[TYPE.h4, { color: LIGHT.text, marginTop: 12 }]}>
+                <View style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 40,
+                  backgroundColor: 'rgba(184, 61, 245, 0.1)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                }}>
+                  <ClipboardList size={40} color={NEON.purple} />
+                </View>
+                <Text style={[TYPE.h4, { color: LIGHT.text, marginTop: 12, fontWeight: '700' }]}>
                   {activeTab === 'my_offers'
-                    ? 'No offers sent yet'
+                    ? 'No bids sent yet'
                     : activeTab === 'won'
-                    ? 'No won requirements yet'
-                    : 'No requirements yet'}
+                    ? 'No won jobs yet'
+                    : 'No jobs available'}
                 </Text>
-                <Text style={[TYPE.caption, { color: LIGHT.textSecondary, marginTop: 6, textAlign: 'center' }]}>
+                <Text style={[TYPE.caption, { color: LIGHT.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 20 }]}>
                   {activeTab === 'my_offers'
-                    ? 'Browse open requirements and send your first offer.'
+                    ? 'Available jobs will appear here. Send your price to get hired!'
                     : activeTab === 'won'
-                    ? 'When a buyer selects your offer, it will appear here.'
-                    : 'When buyers post new requirements, they\'ll show up here.'}
+                    ? 'When a buyer selects your bid, it will appear here.'
+                    : 'New jobs from buyers will show up here. Keep checking!'}
                 </Text>
               </View>
             ) : (
@@ -380,28 +402,29 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                         <View
                           style={{
                             marginTop: SPACING.md,
-                            paddingVertical: 11,
-                            borderRadius: RADIUS.md,
+                            paddingVertical: 14,
+                            borderRadius: RADIUS.lg,
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexDirection: 'row',
-                            backgroundColor: 'rgba(123, 37, 244, 0.1)',
-                            borderWidth: 1,
-                            borderColor: 'rgba(123, 37, 244, 0.3)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            borderWidth: 1.5,
+                            borderColor: 'rgba(34, 197, 94, 0.4)',
                           }}
                         >
-                          <CheckCircle size={15} color={NEON.violet} />
+                          <CheckCircle size={18} color="#22C55E" />
                           <Text
                             style={[
                               TYPE.label,
                               {
-                                color: NEON.violet,
-                                fontWeight: '700',
+                                color: '#22C55E',
+                                fontWeight: '800',
                                 marginLeft: 8,
+                                fontSize: 14,
                               },
                             ]}
                           >
-                            YOUR OFFER: ₹{offerPrice!.toLocaleString('en-IN')}
+                            YOUR BID: ₹{offerPrice!.toLocaleString('en-IN')}
                           </Text>
                         </View>
                       ) : (
@@ -411,27 +434,34 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                           activeOpacity={0.85}
                           style={{
                             marginTop: SPACING.md,
-                            paddingVertical: 11,
-                            borderRadius: RADIUS.md,
+                            paddingVertical: 14,
+                            borderRadius: RADIUS.lg,
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexDirection: 'row',
                             backgroundColor: r.status === 'open' ? NEON.purple : 'rgba(0,0,0,0.08)',
-                            opacity: r.status === 'open' ? 1 : 0.6,
+                            opacity: r.status === 'open' ? 1 : 0.5,
+                            shadowColor: r.status === 'open' ? NEON.purple : 'transparent',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                            elevation: 4,
                           }}
                         >
-                          <Send size={15} color={r.status === 'open' ? '#FFF' : LIGHT.textMuted} />
+                          <Send size={18} color={r.status === 'open' ? '#FFF' : LIGHT.textMuted} />
                           <Text
                             style={[
                               TYPE.label,
                               {
                                 color: r.status === 'open' ? '#FFF' : LIGHT.textMuted,
-                                fontWeight: '700',
+                                fontWeight: '800',
                                 marginLeft: 8,
+                                fontSize: 14,
+                                letterSpacing: 0.5,
                               },
                             ]}
                           >
-                            {r.status === 'open' ? 'Send Price' : 'Closed'}
+                            {r.status === 'open' ? 'SEND YOUR PRICE' : 'CLOSED'}
                           </Text>
                         </TouchableOpacity>
                       )}
