@@ -196,7 +196,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: SPACING.base, paddingBottom: SPACING.sm }}
+          contentContainerStyle={{ paddingHorizontal: SPACING.base, paddingBottom: SPACING.md, gap: 8 }}
         >
           {STATUS_FILTERS.map((f) => {
             const selected = activeTab === f.value;
@@ -206,22 +206,24 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                 onPress={() => setActiveTab(f.value)}
                 activeOpacity={0.8}
                 style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
                   borderRadius: RADIUS.full,
-                  marginRight: SPACING.sm,
-                  backgroundColor: selected ? NEON.purple : 'rgba(255,255,255,0.6)',
-                  borderWidth: 1,
-                  borderColor: selected ? NEON.glow : 'rgba(180,150,220,0.35)',
+                  backgroundColor: selected ? NEON.purple : 'rgba(255,255,255,0.7)',
+                  borderWidth: 1.5,
+                  borderColor: selected ? NEON.purple : 'rgba(180,150,220,0.4)',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  minWidth: 90,
                 }}
               >
                 <Text
-                  style={[
-                    TYPE.label,
-                    { color: selected ? '#FFF' : LIGHT.textSecondary, fontWeight: '600', textAlign: 'center' },
-                  ]}
+                  style={{
+                    color: selected ? '#FFF' : LIGHT.textSecondary,
+                    fontWeight: '700',
+                    fontSize: 13,
+                    textAlign: 'center',
+                  }}
                 >
                   {f.label}
                 </Text>
