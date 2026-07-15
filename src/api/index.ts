@@ -149,6 +149,8 @@ export const equipmentAPI = {
   create: (data: any) => api.post('/equipment', data),
   update: (id: string, data: any) => api.put(`/equipment/${id}`, data),
   delete: (id: string) => api.delete(`/equipment/${id}`),
+  getSampleImages: (category?: string) =>
+    api.get('/equipment/sample-images', { params: category ? { category } : {} }),
 };
 
 export const ordersAPI = {

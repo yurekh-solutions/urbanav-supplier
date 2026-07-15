@@ -61,9 +61,9 @@ type Requirement = {
 type FilterTab = 'open' | 'my_offers' | 'won' | 'all';
 
 const STATUS_FILTERS: { label: string; value: FilterTab }[] = [
-  { label: 'Available', value: 'open' },
-  { label: 'My Bids', value: 'my_offers' },
-  { label: 'Won', value: 'won' },
+  { label: 'Open Jobs', value: 'open' },
+  { label: 'My Offers', value: 'my_offers' },
+  { label: 'Selected', value: 'won' },
   { label: 'All', value: 'all' },
 ];
 
@@ -129,7 +129,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
     if (!quoting) return;
     const priceNum = Number(quotePrice);
     if (!priceNum || priceNum <= 0) {
-      Alert.alert('Add a price', 'Please enter a valid quote price.');
+      Alert.alert('Add a price', 'Please enter your price.');
       return;
     }
     setSubmitting(true);
@@ -140,7 +140,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
       });
       // Track locally
       setLocalOffers((prev) => ({ ...prev, [quoting._id]: priceNum }));
-      Alert.alert('Offer sent!', 'Your competitive offer was shared with the buyer.');
+      Alert.alert('Price sent!', 'Your price was sent to the buyer.');
       setQuoting(null);
       load();
     } catch (e: any) {
@@ -202,9 +202,9 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
               <ClipboardList size={20} color="#FFF" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[TYPE.h2, { color: LIGHT.text, fontWeight: '800' }]}>Find Work</Text>
+              <Text style={[TYPE.h2, { color: LIGHT.text, fontWeight: '800' }]}>New Jobs</Text>
               <Text style={[TYPE.caption, { color: LIGHT.textSecondary }]}>
-                {summary.open} {summary.open === 1 ? 'job' : 'jobs'} available now
+                {summary.open} {summary.open === 1 ? 'job' : 'jobs'} available
               </Text>
             </View>
           </View>
@@ -274,17 +274,17 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                 </View>
                 <Text style={[TYPE.h4, { color: LIGHT.text, marginTop: 12, fontWeight: '700' }]}>
                   {activeTab === 'my_offers'
-                    ? 'No bids sent yet'
+                    ? 'No offers sent yet'
                     : activeTab === 'won'
-                    ? 'No won jobs yet'
+                    ? 'No selected jobs yet'
                     : 'No jobs available'}
                 </Text>
                 <Text style={[TYPE.caption, { color: LIGHT.textSecondary, marginTop: 8, textAlign: 'center', paddingHorizontal: 20 }]}>
                   {activeTab === 'my_offers'
-                    ? 'Available jobs will appear here. Send your price to get hired!'
+                    ? 'Open jobs will appear here. Send your price to get work!'
                     : activeTab === 'won'
-                    ? 'When a buyer selects your bid, it will appear here.'
-                    : 'New jobs from buyers will show up here. Keep checking!'}
+                    ? 'When a buyer picks your offer, it will show here.'
+                    : 'New jobs from buyers will appear here. Keep checking!'}
                 </Text>
               </View>
             ) : (
@@ -334,7 +334,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
                           <Users size={12} color={LIGHT.textTertiary} />
                           <Text style={[TYPE.tiny, { color: LIGHT.textTertiary, marginLeft: 4 }]}>
-                            {r.offersCount} supplier{r.offersCount !== 1 ? 's' : ''} offered
+                            {r.offersCount} supplier{r.offersCount !== 1 ? 's' : ''} sent price
                           </Text>
                         </View>
                       )}
@@ -441,7 +441,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                               },
                             ]}
                           >
-                            YOUR BID: ₹{offerPrice!.toLocaleString('en-IN')}
+                            YOUR PRICE: ₹{offerPrice!.toLocaleString('en-IN')}
                           </Text>
                         </View>
                       ) : (
@@ -478,7 +478,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                               },
                             ]}
                           >
-                            {r.status === 'open' ? 'SEND YOUR PRICE' : 'CLOSED'}
+                            {r.status === 'open' ? 'SEND PRICE' : 'CLOSED'}
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -505,7 +505,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
               }}
             >
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
-                <Text style={[TYPE.h3, { color: LIGHT.text }]}>Send competitive offer</Text>
+                <Text style={[TYPE.h3, { color: LIGHT.text }]}>Send Your Price</Text>
                 <TouchableOpacity onPress={() => setQuoting(null)}>
                   <X size={22} color={LIGHT.textSecondary} />
                 </TouchableOpacity>
@@ -520,7 +520,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
               )}
 
               <Text style={[TYPE.label, { color: LIGHT.textSecondary, marginBottom: 6 }]}>
-                Your Price (₹)
+                Your Price ()
               </Text>
               <TextInput
                 value={quotePrice}
@@ -546,7 +546,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
               <TextInput
                 value={quoteNote}
                 onChangeText={setQuoteNote}
-                placeholder="Include setup time, inclusions, any terms…"
+                placeholder="What is included, setup time, terms…"
                 placeholderTextColor={LIGHT.textMuted}
                 multiline
                 numberOfLines={3}
@@ -583,7 +583,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                   <>
                     <Send size={16} color="#FFF" />
                     <Text style={[TYPE.label, { color: '#FFF', fontWeight: '700', marginLeft: 8 }]}>
-                      Submit Offer
+                      Send Price
                     </Text>
                   </>
                 )}

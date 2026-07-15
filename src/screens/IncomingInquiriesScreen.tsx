@@ -388,7 +388,7 @@ export default function IncomingInquiriesScreen({ navigation }: any) {
 
                 {/* CTA Button */}
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('Browse')}
+                  onPress={() => navigation.navigate('Main', { screen: 'Browse' })}
                   style={{
                     paddingHorizontal: SPACING.xl,
                     paddingVertical: SPACING.sm,
@@ -405,7 +405,7 @@ export default function IncomingInquiriesScreen({ navigation }: any) {
                   }}
                 >
                   <Text style={{ color: '#FFF', fontWeight: '700', letterSpacing: 0.5 }}>
-                    BROWSE REQUIREMENTS
+                    VIEW NEW JOBS
                   </Text>
                   <ChevronRight size={16} color="#FFF" />
                 </TouchableOpacity>

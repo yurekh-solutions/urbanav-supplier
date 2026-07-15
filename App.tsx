@@ -104,7 +104,7 @@ function SupplierTabs() {
         name="Browse"
         component={BrowseRequirementsScreen}
         options={{
-          tabBarLabel: 'Find Work',
+          tabBarLabel: 'New Jobs',
           tabBarIcon: ({ focused, color }: any) => (
             <TabBounce focused={focused}>
               <ClipboardList size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -63,6 +63,53 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Sample images from server
+  const [sampleImages, setSampleImages] = useState<string[]>([]);
+  const [loadingSamples, setLoadingSamples] = useState(false);
+
+  // Fetch sample images for a category
+  const fetchSampleImages = async (cat: string) => {
+    setLoadingSamples(true);
+    try {
+      const res = await equipmentAPI.getSampleImages(cat);
+      console.log('Sample images response:', res.data);
+      const imgs = res.data?.sampleImages || [];
+      // Resolve relative URLs to absolute
+      const resolved = imgs.map((img: string) => resolveMediaUrl(img) || img);
+      console.log('Resolved image URLs:', resolved);
+      setSampleImages(resolved);
+    } catch (error) {
+      console.error('Error fetching sample images:', error);
+      setSampleImages([]);
+    } finally {
+      setLoadingSamples(false);
+    }
+  };
+
+  // Fetch sample images on mount and when category changes
+  useEffect(() => {
+    fetchSampleImages(category);
+  }, [category]);
+
+  // When category changes, set default image if no custom image
+  const handleCategoryChange = (newCategory: string) => {
+    setCategory(newCategory);
+    // If no custom image uploaded, clear current image
+    if (!uploadedUrl) {
+      setImage(null);
+    }
+  };
+
+  const useSampleImage = (imgUrl: string) => {
+    setImage(imgUrl);
+    setUploadedUrl(imgUrl);
+  };
+
+  const clearImage = () => {
+    setImage(null);
+    setUploadedUrl(null);
+  };
+
   const pickImage = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
@@ -77,14 +124,29 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
     });
     if (result.canceled || !result.assets?.[0]) return;
     const uri = result.assets[0].uri;
+    console.log('Selected image URI:', uri);
     setImage(uri);
     setUploading(true);
     try {
+      console.log('Uploading image to server...');
       const res = await uploadAPI.image(uri, 'equipment');
+      console.log('Upload response:', res.data);
       const url = res.data?.url || res.data?.path || res.data?.file?.url;
-      if (url) setUploadedUrl(url);
+      if (url) {
+        setUploadedUrl(url);
+        console.log('Image uploaded successfully:', url);
+      } else {
+        console.error('No URL in upload response');
+        Alert.alert('Upload failed', 'No URL returned from server');
+      }
     } catch (e: any) {
-      Alert.alert('Upload failed', e?.response?.data?.message || 'Try again');
+      console.error('Upload error:', e);
+      console.error('Error response:', e?.response?.data);
+      console.error('Error status:', e?.response?.status);
+      Alert.alert(
+        'Upload failed',
+        e?.response?.data?.message || e?.message || 'Try again'
+      );
       setImage(null);
     } finally {
       setUploading(false);
@@ -185,92 +247,109 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
             keyboardShouldPersistTaps="handled"
           >
             {/* Image picker */}
-            <TouchableOpacity activeOpacity={0.85} onPress={pickImage}>
-              <LightCard padding={0} style={{ overflow: 'hidden' }}>
-                <View
-                  style={{
-                    height: 200,
-                    backgroundColor: LIGHT.cardSoft,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {image ? (
-                    <Image
-                      source={{ uri: image }}
-                      style={{ width: '100%', height: '100%' }}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View style={{ alignItems: 'center' }}>
+            <View>
+              <TouchableOpacity activeOpacity={0.85} onPress={pickImage}>
+                <LightCard padding={0} style={{ overflow: 'hidden' }}>
+                  <View
+                    style={{
+                      height: 200,
+                      backgroundColor: LIGHT.cardSoft,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {image ? (
+                      <Image
+                        source={{ uri: image }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={{ alignItems: 'center' }}>
+                        <View
+                          style={{
+                            width: 64,
+                            height: 64,
+                            borderRadius: 32,
+                            backgroundColor: `${NEON.purple}20`,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: SPACING.sm,
+                          }}
+                        >
+                          <ImageIcon size={28} color={NEON.purple} strokeWidth={1.75} />
+                        </View>
+                        <Text
+                          style={[TYPE.body, { color: LIGHT.text, fontWeight: '600', marginTop: SPACING.xs }]}
+                        >
+                          Tap to add product image
+                        </Text>
+                        <Text
+                          style={[TYPE.caption, { color: LIGHT.textTertiary, marginTop: 4 }]}
+                        >
+                          JPG, PNG up to 5MB
+                        </Text>
+                      </View>
+                    )}
+                    {uploading ? (
                       <View
                         style={{
-                          width: 64,
-                          height: 64,
-                          borderRadius: 32,
-                          backgroundColor: `${NEON.purple}20`,
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          marginBottom: SPACING.sm,
                         }}
                       >
-                        <ImageIcon size={28} color={NEON.purple} strokeWidth={1.75} />
+                        <ActivityIndicator color="#FFF" size="large" />
+                        <Text style={{ color: '#FFF', marginTop: 12, fontWeight: '700', fontSize: 14 }}>
+                          Uploading image...
+                        </Text>
                       </View>
-                      <Text
-                        style={[TYPE.body, { color: LIGHT.text, fontWeight: '600', marginTop: SPACING.xs }]}
+                    ) : null}
+                    {image && !uploading ? (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          right: 12,
+                          bottom: 12,
+                          backgroundColor: 'rgba(0,0,0,0.7)',
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: RADIUS.full,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
                       >
-                        Tap to add product image
-                      </Text>
-                      <Text
-                        style={[TYPE.caption, { color: LIGHT.textTertiary, marginTop: 4 }]}
-                      >
-                        JPG, PNG up to 5MB
-                      </Text>
-                    </View>
-                  )}
-                  {uploading ? (
-                    <View
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(0,0,0,0.6)',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <ActivityIndicator color="#FFF" size="large" />
-                      <Text style={{ color: '#FFF', marginTop: 12, fontWeight: '700', fontSize: 14 }}>
-                        Uploading image...
-                      </Text>
-                    </View>
-                  ) : null}
-                  {image && !uploading ? (
-                    <View
-                      style={{
-                        position: 'absolute',
-                        right: 12,
-                        bottom: 12,
-                        backgroundColor: 'rgba(0,0,0,0.7)',
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: RADIUS.full,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}
-                    >
-                      <Camera size={14} color="#FFF" />
-                      <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>
-                        Change Image
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              </LightCard>
-            </TouchableOpacity>
+                        <Camera size={14} color="#FFF" />
+                        <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>
+                          Change Image
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </LightCard>
+              </TouchableOpacity>
+              {image && !uploadedUrl && (
+                <TouchableOpacity
+                  onPress={clearImage}
+                  style={{
+                    marginTop: SPACING.xs,
+                    alignSelf: 'flex-end',
+                    paddingHorizontal: SPACING.sm,
+                    paddingVertical: 4,
+                  }}
+                >
+                  <Text style={[TYPE.caption, { color: LIGHT.textTertiary, fontWeight: '600' }]}>
+                    Remove image
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
             <LabeledInput
               label="Product Name"
@@ -304,7 +383,7 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
                   return (
                     <TouchableOpacity
                       key={c}
-                      onPress={() => setCategory(c)}
+                      onPress={() => handleCategoryChange(c)}
                       style={{
                         paddingHorizontal: SPACING.base,
                         paddingVertical: SPACING.sm,
@@ -328,6 +407,74 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
                 })}
               </ScrollView>
             </View>
+
+            {/* Sample images for selected category */}
+            {!uploadedUrl && sampleImages.length > 0 && (
+              <View>
+                <Text
+                  style={[
+                    TYPE.caption,
+                    {
+                      color: LIGHT.textTertiary,
+                      letterSpacing: 1.1,
+                      fontWeight: '700',
+                      marginBottom: SPACING.xs,
+                    },
+                  ]}
+                >
+                  SAMPLE IMAGES
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+                  {sampleImages.slice(0, 6).map((imgUrl, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      onPress={() => useSampleImage(imgUrl)}
+                      style={{
+                        width: 100,
+                        height: 100,
+                        borderRadius: RADIUS.md,
+                        overflow: 'hidden',
+                        borderWidth: 2,
+                        borderColor: idx === 0 ? NEON.purple : LIGHT.border,
+                      }}
+                    >
+                      <Image
+                        source={{ uri: imgUrl }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                      <View
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          backgroundColor: 'rgba(184, 61, 245, 0.9)',
+                          paddingVertical: 4,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ color: '#FFF', fontSize: 10, fontWeight: '700' }}>
+                          USE THIS
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={[TYPE.caption, { color: LIGHT.textTertiary, marginTop: SPACING.xs }]}>
+                  Don't have images? Use our sample images above
+                </Text>
+              </View>
+            )}
+
+            {loadingSamples && !uploadedUrl && (
+              <View style={{ alignItems: 'center', paddingVertical: SPACING.base }}>
+                <ActivityIndicator size="small" color={NEON.purple} />
+                <Text style={[TYPE.caption, { color: LIGHT.textTertiary, marginTop: SPACING.xs }]}>
+                  Loading sample images...
+                </Text>
+              </View>
+            )}
 
             <LabeledInput
               label="Price (₹ per day)"
