@@ -177,19 +177,19 @@ export default function MyEquipmentScreen({ navigation }: any) {
               <View style={{ alignItems: 'center', paddingVertical: SPACING['3xl'] }}>
                 <View
                   style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: 36,
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
                     backgroundColor: `${NEON.purple}15`,
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: SPACING.base,
                   }}
                 >
-                  <Package size={32} color={NEON.purple} strokeWidth={1.75} />
+                  <Package size={36} color={NEON.purple} strokeWidth={1.75} />
                 </View>
-                <Text style={[TYPE.h4, { color: LIGHT.text, marginBottom: SPACING.xs }]}>
-                  No equipment yet
+                <Text style={[TYPE.h4, { color: LIGHT.text, marginBottom: SPACING.xs, fontWeight: '700' }]}>
+                  No products yet
                 </Text>
                 <Text
                   style={[
@@ -202,23 +202,28 @@ export default function MyEquipmentScreen({ navigation }: any) {
                     },
                   ]}
                 >
-                  Add your first piece of equipment to start receiving inquiries.
+                  Add your first product to start receiving orders from buyers.
                 </Text>
                 <TouchableOpacity
                   onPress={() => navigation.navigate('AddEditEquipment')}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 6,
+                    gap: 8,
                     paddingHorizontal: SPACING.lg,
-                    paddingVertical: SPACING.sm + 2,
+                    paddingVertical: 14,
                     backgroundColor: NEON.purple,
                     borderRadius: RADIUS.full,
+                    shadowColor: NEON.purple,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 4,
                   }}
                 >
-                  <Plus size={16} color="#FFF" strokeWidth={2.5} />
-                  <Text style={{ color: '#FFF', fontWeight: '700', letterSpacing: 0.4 }}>
-                    ADD EQUIPMENT
+                  <Plus size={18} color="#FFF" strokeWidth={2.5} />
+                  <Text style={{ color: '#FFF', fontWeight: '700', letterSpacing: 0.5, fontSize: 14 }}>
+                    ADD PRODUCT
                   </Text>
                 </TouchableOpacity>
               </View>

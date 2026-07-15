@@ -189,7 +189,7 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
               <LightCard padding={0} style={{ overflow: 'hidden' }}>
                 <View
                   style={{
-                    height: 180,
+                    height: 200,
                     backgroundColor: LIGHT.cardSoft,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -203,11 +203,28 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
                     />
                   ) : (
                     <View style={{ alignItems: 'center' }}>
-                      <ImageIcon size={36} color={LIGHT.textTertiary} strokeWidth={1.5} />
-                      <Text
-                        style={[TYPE.body, { color: LIGHT.textTertiary, marginTop: SPACING.xs }]}
+                      <View
+                        style={{
+                          width: 64,
+                          height: 64,
+                          borderRadius: 32,
+                          backgroundColor: `${NEON.purple}20`,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: SPACING.sm,
+                        }}
                       >
-                        Tap to upload image
+                        <ImageIcon size={28} color={NEON.purple} strokeWidth={1.75} />
+                      </View>
+                      <Text
+                        style={[TYPE.body, { color: LIGHT.text, fontWeight: '600', marginTop: SPACING.xs }]}
+                      >
+                        Tap to add product image
+                      </Text>
+                      <Text
+                        style={[TYPE.caption, { color: LIGHT.textTertiary, marginTop: 4 }]}
+                      >
+                        JPG, PNG up to 5MB
                       </Text>
                     </View>
                   )}
@@ -219,14 +236,14 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundColor: 'rgba(0,0,0,0.45)',
+                        backgroundColor: 'rgba(0,0,0,0.6)',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <ActivityIndicator color="#FFF" />
-                      <Text style={{ color: '#FFF', marginTop: 8, fontWeight: '600' }}>
-                        Uploading…
+                      <ActivityIndicator color="#FFF" size="large" />
+                      <Text style={{ color: '#FFF', marginTop: 12, fontWeight: '700', fontSize: 14 }}>
+                        Uploading image...
                       </Text>
                     </View>
                   ) : null}
@@ -236,18 +253,18 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
                         position: 'absolute',
                         right: 12,
                         bottom: 12,
-                        backgroundColor: 'rgba(0,0,0,0.6)',
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
+                        backgroundColor: 'rgba(0,0,0,0.7)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
                         borderRadius: RADIUS.full,
                         flexDirection: 'row',
                         alignItems: 'center',
-                        gap: 4,
+                        gap: 6,
                       }}
                     >
-                      <Camera size={12} color="#FFF" />
-                      <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>
-                        Change
+                      <Camera size={14} color="#FFF" />
+                      <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>
+                        Change Image
                       </Text>
                     </View>
                   ) : null}
