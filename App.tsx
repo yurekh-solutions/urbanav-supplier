@@ -1,21 +1,10 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, ActivityIndicator, View, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import {
-  BarChart3,
-  Package,
-  MessageSquare,
-  ShoppingCart,
-  Plus,
-  ClipboardList,
-  User,
-} from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
 // Auth / onboarding
@@ -45,9 +34,7 @@ import BrowseRequirementsScreen from './src/screens/BrowseRequirementsScreen';
 import SupplierOrdersScreen from './src/screens/SupplierOrdersScreen';
 import EarningsScreen from './src/screens/EarningsScreen';
 
-import { NEON, SURFACE, TEXT, GLASS } from './src/theme/colors';
-import { LAYOUT } from './src/theme/spacing';
-import { TabBounce } from './src/components/ui';
+import { NEON, SURFACE, TEXT } from './src/theme/colors';
 import { useAuthStore } from './src/store';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
 import { ToastProvider } from './src/components/ToastContext';
@@ -55,133 +42,30 @@ import { ToastProvider } from './src/components/ToastContext';
 const BackHandler = Platform.OS === 'android' ? require('react-native').BackHandler : null;
 
 const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
 
 function SupplierTabs() {
   return (
-    <Tab.Navigator
+    <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: 'rgba(20, 8, 33, 0.92)',
-          borderTopColor: GLASS.tier2Border,
-          borderTopWidth: 1,
-          height: LAYOUT.tabBarHeight,
-          paddingBottom: 10,
-          paddingTop: 10,
-          position: 'absolute',
-          shadowColor: NEON.purple,
-          shadowOffset: { width: 0, height: -8 },
-          shadowOpacity: 0.4,
-          shadowRadius: 20,
-          elevation: 16,
-        },
-        tabBarActiveTintColor: NEON.glow,
-        tabBarInactiveTintColor: TEXT.muted,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', letterSpacing: 0.3 },
       }}
     >
-      <Tab.Screen
-        name="Home"
-        component={SupplierHomeScreen}
-        options={{
-          tabBarIcon: ({ focused, color }: any) => (
-            <TabBounce focused={focused}>
-              <BarChart3 size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
-            </TabBounce>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Browse"
-        component={BrowseRequirementsScreen}
-        options={{
-          tabBarLabel: 'Find Work',
-          tabBarIcon: ({ focused, color }: any) => (
-            <TabBounce focused={focused}>
-              <ClipboardList size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
-            </TabBounce>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="AddEquipmentTab"
-        component={AddEditEquipmentScreen}
-        options={{
-          tabBarLabel: 'Add Product',
-          tabBarIcon: ({ focused }: any) => (
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                marginTop: -22,
-                borderRadius: 28,
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: NEON.glow,
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.55,
-                shadowRadius: 14,
-                elevation: 10,
-              }}
-            >
-              <LinearGradient
-                colors={focused ? ['#B06BFF', '#7A3DFF'] : ['#8A45E8', '#5B1FC9']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 3,
-                  borderColor: 'rgba(20, 8, 33, 0.95)',
-                }}
-              >
-                <Plus size={26} color="#FFFFFF" strokeWidth={3} />
-              </LinearGradient>
-            </View>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Inquiries"
-        component={IncomingInquiriesScreen}
-        options={{
-          tabBarLabel: 'Requests',
-          tabBarIcon: ({ focused, color }: any) => (
-            <TabBounce focused={focused}>
-              <MessageSquare size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
-            </TabBounce>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Orders"
-        component={SupplierOrdersScreen}
-        options={{
-          tabBarLabel: 'Orders',
-          tabBarIcon: ({ focused, color }: any) => (
-            <TabBounce focused={focused}>
-              <ShoppingCart size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
-            </TabBounce>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ focused, color }: any) => (
-            <TabBounce focused={focused}>
-              <User size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
-            </TabBounce>
-          ),
-        }}
-      />
-    </Tab.Navigator>
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="SupplierHome" component={SupplierHomeScreen} />
+      <Stack.Screen name="BrowseRequirements" component={BrowseRequirementsScreen} />
+      <Stack.Screen name="AddEquipment" component={AddEditEquipmentScreen} />
+      <Stack.Screen name="Inquiries" component={IncomingInquiriesScreen} />
+      <Stack.Screen name="Orders" component={SupplierOrdersScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="MyEquipment" component={MyEquipmentScreen} />
+      <Stack.Screen name="Earnings" component={EarningsScreen} />
+      <Stack.Screen name="Addresses" component={AddressesScreen} />
+      <Stack.Screen name="Terms" component={TermsScreen} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} />
+      <Stack.Screen name="MyDocuments" component={MyDocumentsScreen} />
+    </Stack.Navigator>
   );
 }
 

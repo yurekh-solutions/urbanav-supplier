@@ -32,6 +32,9 @@ import {
   Briefcase,
   X,
   Phone,
+  BarChart3,
+  Plus,
+  MessageSquare,
 } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
@@ -335,16 +338,40 @@ export default function ProfileScreen({ navigation }: any) {
   const quickActions = useMemo(
     () => [
       {
-        icon: Briefcase,
-        label: 'My Products',
+        icon: BarChart3,
+        label: 'Home',
         onPress: () =>
-          isGuest ? promptSignIn() : navigation.navigate('MyEquipment' as never),
+          isGuest ? promptSignIn() : navigation.navigate('SupplierHome' as never),
       },
       {
         icon: FileText,
         label: 'Find Work',
         onPress: () =>
           isGuest ? promptSignIn() : navigation.navigate('BrowseRequirements' as never),
+      },
+      {
+        icon: Plus,
+        label: 'Add Product',
+        onPress: () =>
+          isGuest ? promptSignIn() : navigation.navigate('AddEquipment' as never),
+      },
+      {
+        icon: MessageSquare,
+        label: 'Requests',
+        onPress: () =>
+          isGuest ? promptSignIn() : navigation.navigate('Inquiries' as never),
+      },
+      {
+        icon: ShoppingCart,
+        label: 'Orders',
+        onPress: () =>
+          isGuest ? promptSignIn() : navigation.navigate('Orders' as never),
+      },
+      {
+        icon: Briefcase,
+        label: 'My Products',
+        onPress: () =>
+          isGuest ? promptSignIn() : navigation.navigate('MyEquipment' as never),
       },
       {
         icon: CreditCard,
