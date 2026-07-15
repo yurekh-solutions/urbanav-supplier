@@ -32,9 +32,6 @@ import {
   Briefcase,
   X,
   Phone,
-  BarChart3,
-  Plus,
-  MessageSquare,
 } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
@@ -338,40 +335,16 @@ export default function ProfileScreen({ navigation }: any) {
   const quickActions = useMemo(
     () => [
       {
-        icon: BarChart3,
-        label: 'Home',
+        icon: Briefcase,
+        label: 'My Products',
         onPress: () =>
-          isGuest ? promptSignIn() : navigation.navigate('SupplierHome' as never),
+          isGuest ? promptSignIn() : navigation.navigate('MyEquipment' as never),
       },
       {
         icon: FileText,
         label: 'Find Work',
         onPress: () =>
           isGuest ? promptSignIn() : navigation.navigate('BrowseRequirements' as never),
-      },
-      {
-        icon: Plus,
-        label: 'Add Product',
-        onPress: () =>
-          isGuest ? promptSignIn() : navigation.navigate('AddEquipment' as never),
-      },
-      {
-        icon: MessageSquare,
-        label: 'Requests',
-        onPress: () =>
-          isGuest ? promptSignIn() : navigation.navigate('Inquiries' as never),
-      },
-      {
-        icon: ShoppingCart,
-        label: 'Orders',
-        onPress: () =>
-          isGuest ? promptSignIn() : navigation.navigate('Orders' as never),
-      },
-      {
-        icon: Briefcase,
-        label: 'My Products',
-        onPress: () =>
-          isGuest ? promptSignIn() : navigation.navigate('MyEquipment' as never),
       },
       {
         icon: CreditCard,
@@ -415,22 +388,24 @@ export default function ProfileScreen({ navigation }: any) {
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <TouchableOpacity
-                  onPress={() => navigation.goBack()}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: LIGHT.card,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: LIGHT.border,
-                    marginRight: 12,
-                  }}
-                >
-                  <ChevronLeft size={20} color={LIGHT.text} />
-                </TouchableOpacity>
+                {navigation.canGoBack() ? (
+                  <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: LIGHT.card,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderWidth: 1,
+                      borderColor: LIGHT.border,
+                      marginRight: 12,
+                    }}
+                  >
+                    <ChevronLeft size={20} color={LIGHT.text} />
+                  </TouchableOpacity>
+                ) : null}
                 <Text style={[TYPE.h2, { color: LIGHT.text, letterSpacing: -0.3 }]}>
                   Profile
                 </Text>
