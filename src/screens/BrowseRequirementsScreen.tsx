@@ -192,12 +192,8 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* Filter tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: SPACING.base, paddingBottom: SPACING.md, gap: 8 }}
-        >
+        {/* Filter tabs - Simple horizontal row */}
+        <View style={{ flexDirection: 'row', paddingHorizontal: SPACING.base, paddingBottom: SPACING.base, gap: 8, flexWrap: 'wrap' }}>
           {STATUS_FILTERS.map((f) => {
             const selected = activeTab === f.value;
             return (
@@ -206,23 +202,24 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                 onPress={() => setActiveTab(f.value)}
                 activeOpacity={0.8}
                 style={{
-                  paddingHorizontal: 20,
-                  paddingVertical: 10,
-                  borderRadius: RADIUS.full,
-                  backgroundColor: selected ? NEON.purple : 'rgba(255,255,255,0.7)',
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  backgroundColor: selected ? NEON.purple : '#FFF',
                   borderWidth: 1.5,
-                  borderColor: selected ? NEON.purple : 'rgba(180,150,220,0.4)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minWidth: 90,
+                  borderColor: selected ? NEON.purple : '#E0D4F0',
+                  shadowColor: selected ? NEON.purple : 'transparent',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 3,
+                  elevation: selected ? 2 : 0,
                 }}
               >
                 <Text
                   style={{
-                    color: selected ? '#FFF' : LIGHT.textSecondary,
+                    color: selected ? '#FFF' : '#4A3060',
                     fontWeight: '700',
                     fontSize: 13,
-                    textAlign: 'center',
                   }}
                 >
                   {f.label}
@@ -230,7 +227,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
 
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

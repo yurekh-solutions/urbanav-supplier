@@ -78,7 +78,7 @@ function SupplierTabs() {
         },
         tabBarActiveTintColor: NEON.glow,
         tabBarInactiveTintColor: TEXT.muted,
-        tabBarLabelStyle: { fontSize: 9, fontWeight: '700', letterSpacing: 0.2 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', letterSpacing: 0.3 },
       }}
     >
       <Tab.Screen
@@ -96,7 +96,7 @@ function SupplierTabs() {
         name="Browse"
         component={BrowseRequirementsScreen}
         options={{
-          tabBarLabel: 'Work',
+          tabBarLabel: 'Find Work',
           tabBarIcon: ({ focused, color }: any) => (
             <TabBounce focused={focused}>
               <ClipboardList size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
@@ -108,7 +108,7 @@ function SupplierTabs() {
         name="AddEquipmentTab"
         component={AddEditEquipmentScreen}
         options={{
-          tabBarLabel: 'Add',
+          tabBarLabel: 'Add Product',
           tabBarIcon: ({ focused }: any) => (
             <View
               style={{
