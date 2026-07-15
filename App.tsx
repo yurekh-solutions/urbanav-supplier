@@ -105,47 +105,6 @@ function SupplierTabs() {
         }}
       />
       <Tab.Screen
-        name="AddEquipmentTab"
-        component={AddEditEquipmentScreen}
-        options={{
-          tabBarLabel: 'Add Product',
-          tabBarIcon: ({ focused }: any) => (
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                marginTop: -22,
-                borderRadius: 28,
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: NEON.glow,
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.55,
-                shadowRadius: 14,
-                elevation: 10,
-              }}
-            >
-              <LinearGradient
-                colors={focused ? ['#B06BFF', '#7A3DFF'] : ['#8A45E8', '#5B1FC9']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 3,
-                  borderColor: 'rgba(20, 8, 33, 0.95)',
-                }}
-              >
-                <Plus size={26} color="#FFFFFF" strokeWidth={3} />
-              </LinearGradient>
-            </View>
-          ),
-        }}
-      />
-      <Tab.Screen
         name="Inquiries"
         component={IncomingInquiriesScreen}
         options={{
