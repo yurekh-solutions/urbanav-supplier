@@ -48,6 +48,7 @@ import EarningsScreen from './src/screens/EarningsScreen';
 import { NEON, SURFACE, TEXT, GLASS } from './src/theme/colors';
 import { LAYOUT } from './src/theme/spacing';
 import { TabBounce } from './src/components/ui';
+import { Pressable } from 'react-native';
 import { useAuthStore } from './src/store';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
 import { ToastProvider } from './src/components/ToastContext';
@@ -79,6 +80,13 @@ function SupplierTabs() {
         tabBarActiveTintColor: NEON.glow,
         tabBarInactiveTintColor: TEXT.muted,
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600', letterSpacing: 0.3 },
+        tabBarButton: (props: any) => (
+          <Pressable
+            {...props}
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8 }}
+            android_ripple={{ color: 'rgba(184, 61, 245, 0.2)' }}
+          />
+        ),
       }}
     >
       <Tab.Screen
