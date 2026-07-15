@@ -335,13 +335,13 @@ export default function ProfileScreen({ navigation }: any) {
     () => [
       {
         icon: Briefcase,
-        label: 'My Equipment',
+        label: 'My Products',
         onPress: () =>
           isGuest ? promptSignIn() : navigation.navigate('MyEquipment' as never),
       },
       {
         icon: FileText,
-        label: 'Browse Requirements',
+        label: 'Find Jobs',
         onPress: () =>
           isGuest ? promptSignIn() : navigation.navigate('BrowseRequirements' as never),
       },

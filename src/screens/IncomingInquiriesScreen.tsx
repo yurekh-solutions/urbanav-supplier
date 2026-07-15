@@ -217,7 +217,7 @@ export default function IncomingInquiriesScreen({ navigation }: any) {
               paddingBottom: SPACING.sm,
             }}
           >
-            <Text style={[TYPE.h2, { color: LIGHT.text, letterSpacing: -0.3 }]}>Inquiries</Text>
+            <Text style={[TYPE.h2, { color: LIGHT.text, letterSpacing: -0.3 }]}>Requests</Text>
             <Text
               style={[TYPE.caption, { color: LIGHT.textTertiary, marginTop: 2 }]}
               numberOfLines={2}

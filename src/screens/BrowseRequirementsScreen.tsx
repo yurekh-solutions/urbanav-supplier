@@ -173,10 +173,10 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
         <View style={{ paddingHorizontal: SPACING.base, paddingTop: SPACING.sm, paddingBottom: SPACING.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
             <ClipboardList size={22} color={NEON.glow} />
-            <Text style={[TYPE.h2, { color: LIGHT.text, marginLeft: 8 }]}>Buyer Requirements</Text>
+            <Text style={[TYPE.h2, { color: LIGHT.text, marginLeft: 8 }]}>New Jobs</Text>
           </View>
           <Text style={[TYPE.caption, { color: LIGHT.textSecondary }]}>
-            {summary.total} result{summary.total !== 1 ? 's' : ''} · Browse posts and send competitive offers.
+            {summary.total} job{summary.total !== 1 ? 's' : ''} available · Send your price to get hired.
           </Text>
         </View>
 
@@ -431,7 +431,7 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
                               },
                             ]}
                           >
-                            {r.status === 'open' ? 'Send Quote' : 'Closed'}
+                            {r.status === 'open' ? 'Send Price' : 'Closed'}
                           </Text>
                         </TouchableOpacity>
                       )}

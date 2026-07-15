@@ -96,7 +96,7 @@ function SupplierTabs() {
         name="Browse"
         component={BrowseRequirementsScreen}
         options={{
-          tabBarLabel: 'Browse',
+          tabBarLabel: 'Jobs',
           tabBarIcon: ({ focused, color }: any) => (
             <TabBounce focused={focused}>
               <ClipboardList size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
@@ -108,7 +108,7 @@ function SupplierTabs() {
         name="AddEquipmentTab"
         component={AddEditEquipmentScreen}
         options={{
-          tabBarLabel: () => null,
+          tabBarLabel: 'Add Product',
           tabBarIcon: ({ focused }: any) => (
             <View
               style={{
@@ -149,6 +149,7 @@ function SupplierTabs() {
         name="Inquiries"
         component={IncomingInquiriesScreen}
         options={{
+          tabBarLabel: 'Requests',
           tabBarIcon: ({ focused, color }: any) => (
             <TabBounce focused={focused}>
               <MessageSquare size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />

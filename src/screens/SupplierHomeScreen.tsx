@@ -214,7 +214,7 @@ export default function SupplierHomeScreen({ navigation }: any) {
           <ScrollView
             contentContainerStyle={{
               paddingHorizontal: SPACING.xl,
-              paddingBottom: SPACING['3xl'],
+              paddingBottom: 120,
             }}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={NEON.purple} />
@@ -288,7 +288,7 @@ export default function SupplierHomeScreen({ navigation }: any) {
             <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xl }}>
               <StatTile
                 icon={Package}
-                label="Equipment"
+                label="My Products"
                 value={String(stats.equipmentCount)}
                 tint="#7B25F4"
                 onPress={() => navigation.navigate('Main', { screen: 'Equipment' })}
@@ -318,7 +318,7 @@ export default function SupplierHomeScreen({ navigation }: any) {
             <View style={{ flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.xl }}>
               <ActionTile
                 icon={Plus}
-                label="Add Equipment"
+                label="Add Product"
                 onPress={() => navigation.navigate('AddEditEquipment')}
               />
               <ActionTile

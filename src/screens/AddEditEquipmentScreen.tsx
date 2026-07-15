@@ -169,7 +169,7 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
                 <ChevronLeft size={20} color={LIGHT.text} />
               </TouchableOpacity>
               <Text style={[TYPE.h3, { color: LIGHT.text, fontWeight: '700' }]}>
-                {isEdit ? 'Edit Equipment' : 'Add Equipment'}
+                {isEdit ? 'Edit Product' : 'Add Product'}
               </Text>
             </View>
           </FadeInView>
@@ -254,8 +254,8 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
             </TouchableOpacity>
 
             <LabeledInput
-              label="Name"
-              placeholder="e.g. JBL EON 715 Sound System"
+              label="Product Name"
+              placeholder="e.g. JBL Speaker, LED Light"
               value={name}
               onChangeText={setName}
             />
@@ -273,7 +273,7 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
                   },
                 ]}
               >
-                CATEGORY
+                TYPE
               </Text>
               <ScrollView
                 horizontal
@@ -311,7 +311,7 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
             </View>
 
             <LabeledInput
-              label="Base price (₹ per day)"
+              label="Price (₹ per day)"
               placeholder="e.g. 5000"
               value={basePrice}
               onChangeText={setBasePrice}
@@ -319,16 +319,16 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
             />
 
             <LabeledInput
-              label="Description"
-              placeholder="Brief description, specs, condition…"
+              label="About Product"
+              placeholder="What is it? Condition? Features?"
               value={description}
               onChangeText={setDescription}
               multiline
             />
 
             <LabeledInput
-              label="Tags (comma-separated)"
-              placeholder="e.g. bluetooth, 1000W, wireless"
+              label="Keywords (optional)"
+              placeholder="e.g. bluetooth, speaker, wireless"
               value={tagsInput}
               onChangeText={setTagsInput}
               leftIcon={<Tag size={14} color={LIGHT.textTertiary} />}
@@ -357,7 +357,7 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
                 <Text
                   style={{ color: '#FFF', fontWeight: '700', letterSpacing: 0.6, fontSize: 15 }}
                 >
-                  {isEdit ? 'SAVE CHANGES' : 'ADD EQUIPMENT'}
+                  {isEdit ? 'SAVE CHANGES' : 'ADD PRODUCT'}
                 </Text>
               )}
             </TouchableOpacity>
