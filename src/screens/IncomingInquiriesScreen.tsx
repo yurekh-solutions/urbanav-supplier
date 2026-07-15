@@ -30,6 +30,7 @@ import {
   XCircle,
   CheckCircle2,
   ChevronRight,
+  ChevronLeft,
 } from 'lucide-react-native';
 import {
   LightScreenBackground,
@@ -212,19 +213,41 @@ export default function IncomingInquiriesScreen({ navigation }: any) {
         <FadeInView>
           <View
             style={{
-              paddingHorizontal: SPACING.xl,
+              paddingHorizontal: SPACING.base,
               paddingTop: SPACING.base,
               paddingBottom: SPACING.sm,
+              flexDirection: 'row',
+              alignItems: 'center',
             }}
           >
-            <Text style={[TYPE.h2, { color: LIGHT.text, letterSpacing: -0.3 }]}>Requests</Text>
-            <Text
-              style={[TYPE.caption, { color: LIGHT.textTertiary, marginTop: 2 }]}
-              numberOfLines={2}
-            >
-              {counts.pending} pending · {counts.responded} responded ·{' '}
-              {counts.accepted} accepted · {inquiries.length} total
-            </Text>
+            {navigation.canGoBack() ? (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: LIGHT.card,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: LIGHT.border,
+                  marginRight: 12,
+                }}
+              >
+                <ChevronLeft size={20} color={LIGHT.text} />
+              </TouchableOpacity>
+            ) : null}
+            <View style={{ flex: 1 }}>
+              <Text style={[TYPE.h2, { color: LIGHT.text, letterSpacing: -0.3 }]}>Requests</Text>
+              <Text
+                style={[TYPE.caption, { color: LIGHT.textTertiary, marginTop: 2 }]}
+                numberOfLines={2}
+              >
+                {counts.pending} pending · {counts.responded} responded ·{' '}
+                {counts.accepted} accepted · {inquiries.length} total
+              </Text>
+            </View>
           </View>
         </FadeInView>
 

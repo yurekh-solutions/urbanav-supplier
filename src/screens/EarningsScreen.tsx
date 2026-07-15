@@ -160,22 +160,24 @@ export default function EarningsScreen({ navigation }: any) {
               paddingBottom: SPACING.sm,
             }}
           >
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: LIGHT.card,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: LIGHT.border,
-                marginRight: SPACING.sm,
-              }}
-            >
-              <ChevronLeft size={20} color={LIGHT.text} />
-            </TouchableOpacity>
+            {navigation.canGoBack() ? (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: LIGHT.card,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: LIGHT.border,
+                  marginRight: SPACING.sm,
+                }}
+              >
+                <ChevronLeft size={20} color={LIGHT.text} />
+              </TouchableOpacity>
+            ) : null}
             <Text style={[TYPE.h3, { color: LIGHT.text, fontWeight: '700' }]}>Earnings</Text>
           </View>
         </FadeInView>

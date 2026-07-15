@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { Plus, Edit3, Trash2, Package } from 'lucide-react-native';
+import { Plus, Edit3, Trash2, Package, ChevronLeft } from 'lucide-react-native';
 import {
   LightScreenBackground,
   LightCard,
@@ -102,7 +102,7 @@ export default function MyEquipmentScreen({ navigation }: any) {
         <FadeInView>
           <View
             style={{
-              paddingHorizontal: SPACING.xl,
+              paddingHorizontal: SPACING.base,
               paddingTop: SPACING.base,
               paddingBottom: SPACING.sm,
               flexDirection: 'row',
@@ -110,11 +110,31 @@ export default function MyEquipmentScreen({ navigation }: any) {
               justifyContent: 'space-between',
             }}
           >
-            <View>
-              <Text style={[TYPE.h2, { color: LIGHT.text, letterSpacing: -0.3 }]}>My Equipment</Text>
-              <Text style={[TYPE.caption, { color: LIGHT.textTertiary, marginTop: 2 }]}>
-                {items.length} {items.length === 1 ? 'item' : 'items'}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              {navigation.canGoBack() ? (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: LIGHT.card,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: LIGHT.border,
+                    marginRight: 12,
+                  }}
+                >
+                  <ChevronLeft size={20} color={LIGHT.text} />
+                </TouchableOpacity>
+              ) : null}
+              <View>
+                <Text style={[TYPE.h2, { color: LIGHT.text, letterSpacing: -0.3 }]}>My Products</Text>
+                <Text style={[TYPE.caption, { color: LIGHT.textTertiary, marginTop: 2 }]}>
+                  {items.length} {items.length === 1 ? 'item' : 'items'}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity
               onPress={() => navigation.navigate('AddEditEquipment')}
