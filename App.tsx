@@ -105,18 +105,6 @@ function SupplierTabs() {
         }}
       />
       <Tab.Screen
-        name="Inquiries"
-        component={IncomingInquiriesScreen}
-        options={{
-          tabBarLabel: 'Requests',
-          tabBarIcon: ({ focused, color }: any) => (
-            <TabBounce focused={focused}>
-              <MessageSquare size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
-            </TabBounce>
-          ),
-        }}
-      />
-      <Tab.Screen
         name="Orders"
         component={SupplierOrdersScreen}
         options={{

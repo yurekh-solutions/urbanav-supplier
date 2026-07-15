@@ -32,6 +32,7 @@ import {
   Briefcase,
   X,
   Phone,
+  MessageSquare,
 } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
@@ -345,6 +346,12 @@ export default function ProfileScreen({ navigation }: any) {
         label: 'Find Work',
         onPress: () =>
           isGuest ? promptSignIn() : navigation.navigate('BrowseRequirements' as never),
+      },
+      {
+        icon: MessageSquare,
+        label: 'Requests',
+        onPress: () =>
+          isGuest ? promptSignIn() : navigation.navigate('Inquiries' as never),
       },
       {
         icon: CreditCard,
