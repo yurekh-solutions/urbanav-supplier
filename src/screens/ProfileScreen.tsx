@@ -342,12 +342,6 @@ export default function ProfileScreen({ navigation }: any) {
           isGuest ? promptSignIn() : navigation.navigate('MyEquipment' as never),
       },
       {
-        icon: FileText,
-        label: 'Find Work',
-        onPress: () =>
-          isGuest ? promptSignIn() : navigation.navigate('Browse' as never),
-      },
-      {
         icon: MessageSquare,
         label: 'Requests',
         onPress: () =>

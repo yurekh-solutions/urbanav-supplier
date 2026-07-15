@@ -58,7 +58,6 @@ type Requirement = {
   offersCount?: number;
   myOffer?: { price: number; note?: string } | null;
 };
-
 type FilterTab = 'open' | 'my_offers' | 'won' | 'all';
 
 const STATUS_FILTERS: { label: string; value: FilterTab }[] = [
