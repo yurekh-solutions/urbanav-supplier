@@ -237,6 +237,8 @@ export default function App() {
               <Stack.Screen name="Chat" component={ChatScreen} />
               <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
               <Stack.Screen name="AddEditEquipment" component={AddEditEquipmentScreen} />
+              <Stack.Screen name="MyEquipment" component={MyEquipmentScreen} />
+              <Stack.Screen name="Inquiries" component={IncomingInquiriesScreen} />
               <Stack.Screen name="Earnings" component={EarningsScreen} />
               <Stack.Screen name="Profile" component={ProfileScreen} />
               <Stack.Screen name="Addresses" component={AddressesScreen} />

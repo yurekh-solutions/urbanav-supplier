@@ -345,7 +345,7 @@ export default function ProfileScreen({ navigation }: any) {
         icon: FileText,
         label: 'Find Work',
         onPress: () =>
-          isGuest ? promptSignIn() : navigation.navigate('BrowseRequirements' as never),
+          isGuest ? promptSignIn() : navigation.navigate('Browse' as never),
       },
       {
         icon: MessageSquare,
