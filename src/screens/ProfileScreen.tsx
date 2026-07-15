@@ -22,6 +22,7 @@ import {
   HelpCircle,
   FileText,
   ChevronRight,
+  ChevronLeft,
   LogOut,
   ShoppingCart,
   Heart,
@@ -386,9 +387,27 @@ export default function ProfileScreen({ navigation }: any) {
                 paddingBottom: SPACING.sm,
               }}
             >
-              <Text style={[TYPE.h2, { color: LIGHT.text, letterSpacing: -0.3 }]}>
-                Profile
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: LIGHT.card,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: LIGHT.border,
+                    marginRight: 12,
+                  }}
+                >
+                  <ChevronLeft size={20} color={LIGHT.text} />
+                </TouchableOpacity>
+                <Text style={[TYPE.h2, { color: LIGHT.text, letterSpacing: -0.3 }]}>
+                  Profile
+                </Text>
+              </View>
               {loading && !refreshing ? (
                 <ActivityIndicator size="small" color={LIGHT.accent} />
               ) : null}

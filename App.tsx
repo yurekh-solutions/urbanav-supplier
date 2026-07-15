@@ -161,6 +161,7 @@ function SupplierTabs() {
         name="Orders"
         component={SupplierOrdersScreen}
         options={{
+          tabBarLabel: 'Orders',
           tabBarIcon: ({ focused, color }: any) => (
             <TabBounce focused={focused}>
               <ShoppingCart size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />

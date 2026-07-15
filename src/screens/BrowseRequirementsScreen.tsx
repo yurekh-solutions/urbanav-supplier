@@ -27,6 +27,7 @@ import {
   X,
   Filter,
   CheckCircle,
+  ChevronLeft,
 } from 'lucide-react-native';
 import {
   LightScreenBackground,
@@ -172,6 +173,22 @@ export default function BrowseRequirementsScreen({ navigation }: any) {
         {/* Header */}
         <View style={{ paddingHorizontal: SPACING.base, paddingTop: SPACING.base, paddingBottom: SPACING.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: LIGHT.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: LIGHT.border,
+                marginRight: 12,
+              }}
+            >
+              <ChevronLeft size={20} color={LIGHT.text} />
+            </TouchableOpacity>
             <View style={{
               width: 40,
               height: 40,

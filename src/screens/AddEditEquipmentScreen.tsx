@@ -176,7 +176,7 @@ export default function AddEditEquipmentScreen({ navigation, route }: any) {
 
           <ScrollView
             contentContainerStyle={{
-              paddingHorizontal: SPACING.xl,
+              paddingHorizontal: SPACING.base,
               paddingBottom: 140,
               gap: SPACING.base,
             }}
